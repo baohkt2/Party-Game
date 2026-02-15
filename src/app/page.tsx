@@ -1,65 +1,213 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { useGameStore } from '@/lib/store';
 
 export default function Home() {
+  const router = useRouter();
+  const { setPlayer, setRoom } = useGameStore();
+  
+  const [name, setName] = useState('');
+  const [roomCode, setRoomCode] = useState('');
+  const [mode, setMode] = useState<'create' | 'join'>('create');
+  const [loading, setLoading] = useState(false);
+
+  const handleCreateRoom = async () => {
+    if (!name.trim() || name.trim().length < 2) {
+      toast.error('Tên phải có ít nhất 2 ký tự');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hostName: name.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Không thể tạo phòng');
+      }
+
+      const { roomId, playerId } = data.data;
+
+      // Save to localStorage and store
+      localStorage.setItem('playerId', playerId);
+      localStorage.setItem('playerName', name.trim());
+      localStorage.setItem('roomId', roomId);
+      
+      setPlayer(playerId, name.trim());
+      setRoom(roomId);
+
+      toast.success(`Phòng ${roomId} đã được tạo!`);
+      router.push(`/lobby/${roomId}`);
+    } catch (error) {
+      console.error('Create room error:', error);
+      toast.error(error instanceof Error ? error.message : 'Lỗi không xác định');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinRoom = async () => {
+    if (!name.trim() || name.trim().length < 2) {
+      toast.error('Tên phải có ít nhất 2 ký tự');
+      return;
+    }
+
+    if (roomCode.length !== 6) {
+      toast.error('Mã phòng phải có 6 ký tự');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/rooms/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          roomCode: roomCode.toUpperCase(), 
+          playerName: name.trim() 
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Không thể tham gia phòng');
+      }
+
+      const { roomId, playerId } = data.data;
+
+      // Save to localStorage and store
+      localStorage.setItem('playerId', playerId);
+      localStorage.setItem('playerName', name.trim());
+      localStorage.setItem('roomId', roomId);
+      
+      setPlayer(playerId, name.trim());
+      setRoom(roomId);
+
+      toast.success(`Đã tham gia phòng ${roomId}!`);
+      router.push(`/lobby/${roomId}`);
+    } catch (error) {
+      console.error('Join room error:', error);
+      toast.error(error instanceof Error ? error.message : 'Lỗi không xác định');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Quick play for development
+  const handleQuickPlay = () => {
+    const randomName = `Player${Math.floor(Math.random() * 1000)}`;
+    setName(randomName);
+    setTimeout(() => {
+      const btn = document.getElementById('create-room-btn');
+      if (btn) btn.click();
+    }, 100);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-6 space-y-6">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-2">🎮 Vua Trò Chơi</h1>
+          <p className="text-gray-600">Party Game Platform</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Name Input */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            Nhập tên của bạn
+          </label>
+          <Input
+            placeholder="Tên của bạn (2-15 ký tự)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={15}
+            className="text-lg"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Mode Selection */}
+        <div className="flex gap-2">
+          <Button
+            variant={mode === 'create' ? 'default' : 'outline'}
+            onClick={() => setMode('create')}
+            className="flex-1"
+            disabled={loading}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            Tạo phòng
+          </Button>
+          <Button
+            variant={mode === 'join' ? 'default' : 'outline'}
+            onClick={() => setMode('join')}
+            className="flex-1"
+            disabled={loading}
+          >
+            Tham gia
+          </Button>
+        </div>
+
+        {/* Room Code Input (only for join mode) */}
+        {mode === 'join' && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Mã phòng
+            </label>
+            <Input
+              placeholder="Nhập mã phòng (6 ký tự)"
+              value={roomCode}
+              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+              maxLength={6}
+              className="text-lg text-center font-mono tracking-wider"
+              disabled={loading}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+        )}
+
+        {/* Action Button */}
+        <Button
+          id="create-room-btn"
+          size="lg"
+          className="w-full"
+          onClick={mode === 'create' ? handleCreateRoom : handleJoinRoom}
+          disabled={
+            loading ||
+            !name.trim() ||
+            name.trim().length < 2 ||
+            (mode === 'join' && roomCode.length !== 6)
+          }
+        >
+          {loading
+            ? '⏳ Đang xử lý...'
+            : mode === 'create'
+            ? '🎲 Tạo phòng mới'
+            : '🚪 Vào phòng'}
+        </Button>
+
+        {/* Quick Play (dev only) */}
+        {process.env.NODE_ENV === 'development' && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleQuickPlay}
+            disabled={loading}
           >
-            Documentation
-          </a>
-        </div>
-      </main>
+            ⚡ Chơi nhanh (Dev)
+          </Button>
+        )}
+      </Card>
     </div>
   );
 }

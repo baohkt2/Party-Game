@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎮 Vua Trò Chơi - Party Game Web App
 
-## Getting Started
+Multiplayer party game với 3 mini-games, real-time leaderboard và mobile-responsive UI.
 
-First, run the development server:
+## 🚀 Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui
+- **Real-time**: Pusher
+- **Database**: Vercel Postgres / Neon
+- **State Management**: Zustand
+- **Deployment**: Vercel
+
+## 📦 Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Setup environment variables
+cp .env.example .env.local
+# Điền thông tin Pusher và Database vào .env.local
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🗄️ Database Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Tạo Vercel Postgres hoặc Neon database
+2. Copy connection strings vào `.env.local`
+3. Chạy SQL schema từ file `database-schema.sql`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🎯 Build Progress
 
-## Learn More
+- [x] **Giai đoạn 0**: Khởi tạo dự án ✅
+- [ ] **Giai đoạn 1**: Đăng nhập + Tạo/Join phòng
+- [ ] **Giai đoạn 2**: Lobby Real-time
+- [ ] **Giai đoạn 3-9**: Games & Deploy
 
-To learn more about Next.js, take a look at the following resources:
+## 📱 Development Commands
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run dev   # Development server
+npm run build # Build production
+npm start     # Start production
+npm run lint  # Lint code
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📚 Project Structure
 
-## Deploy on Vercel
+```
+party-game/
+├── src/
+│   ├── app/          # Pages & API routes
+│   ├── components/   # React components
+│   ├── lib/          # Utilities (db, pusher, store, score)
+│   └── types/        # TypeScript types
+└── database-schema.sql
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🐛 Troubleshooting
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Node version**: Cần >= 20.9.0
+
+**Pusher không kết nối**: Kiểm tra credentials trong `.env.local`
+
+**Database failed**: Verify connection strings
