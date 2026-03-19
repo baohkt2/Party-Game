@@ -154,13 +154,19 @@ export async function updatePlayerScore(playerId: string, game: number, score: n
   try {
     const column = `game${game}_score`;
     
-    // Update specific game score and total
+    // First update the specific game score
     await sql.query(`
       UPDATE players 
-      SET ${column} = $1, 
-          total_score = COALESCE(game1_score, 0) + COALESCE(game2_score, 0) + COALESCE(game3_score, 0) + COALESCE(game4_score, 0) + COALESCE(game5_score, 0)
+      SET ${column} = $1
       WHERE id = $2
     `, [score, playerId]);
+
+    // Then recalculate total_score from the now-updated values
+    await sql`
+      UPDATE players 
+      SET total_score = COALESCE(game1_score, 0) + COALESCE(game2_score, 0) + COALESCE(game3_score, 0) + COALESCE(game4_score, 0) + COALESCE(game5_score, 0)
+      WHERE id = ${playerId}
+    `;
   } catch (error) {
     console.error('Error updating player score:', error);
     throw error;

@@ -24,6 +24,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
   const [results, setResults] = useState<ReflexResult[]>([]);
   const [myResult, setMyResult] = useState<ReflexResult | null>(null);
   const [startTime, setStartTime] = useState<number>(0);
+  const [scored, setScored] = useState(false);
   
   const timeoutRef = useRef<NodeJS.Timeout>(null);
   const myId = typeof window !== 'undefined' ? localStorage.getItem('playerId') : null;
@@ -36,7 +37,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
       setPhase('ready');
       setResults([]);
       setMyResult(null);
-      // Bắt đầu đếm ngược sang Green
+      setScored(false);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         setPhase('go');
@@ -60,7 +61,6 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
       channel.unbind('reflex-start');
       channel.unbind('reflex-click');
       channel.unbind('reflex-end');
-      // Không unsubscribe vì GamePage đang quản lý channel
     };
   }, [roomId]);
 
@@ -71,24 +71,58 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
     }
   }, [results, players.length, isHost, phase]);
 
-  const startGame = async () => {
-    const delay = Math.floor(Math.random() * 4000) + 2000; // 2-6 giây
-    await fetch(`/api/rooms/${roomId}/game/action`, {
+  // Host auto-score khi vào result
+  useEffect(() => {
+    if (!isHost || phase !== 'result' || scored || results.length === 0) return;
+    setScored(true);
+
+    const sorted = [...results].sort((a, b) => a.time - b.time);
+    const fastest = sorted.find(r => !r.early);
+    const slowest = sorted.filter(r => !r.early).pop();
+
+    const scoreUpdates: Promise<void>[] = [];
+    sorted.forEach(r => {
+      let delta = 0;
+      if (r.early) {
+        delta = -1;
+      } else if (fastest && r.playerId === fastest.playerId) {
+        delta = 3;
+      } else if (slowest && r.playerId === slowest.playerId) {
+        delta = -1;
+      }
+      if (delta !== 0) {
+        const p = players.find(p => p.id === r.playerId);
+        const currentScore = p?.gameScores?.game1 || 0;
+        scoreUpdates.push(
+          fetch(`/api/rooms/${roomId}/game/score`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerId: r.playerId, gameNumber: 1, score: currentScore + delta }),
+          }).then(() => {})
+        );
+      }
+    });
+    Promise.all(scoreUpdates);
+  }, [phase, isHost, scored, results, players, roomId]);
+
+  const startGame = () => {
+    const delay = Math.floor(Math.random() * 4000) + 2000;
+    fetch(`/api/rooms/${roomId}/game/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event: 'reflex-start', data: { delay } }),
     });
   };
 
-  const endRound = async () => {
-    await fetch(`/api/rooms/${roomId}/game/action`, {
+  const endRound = () => {
+    fetch(`/api/rooms/${roomId}/game/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event: 'reflex-end', data: {} }),
     });
   };
 
-  const handleClick = async () => {
+  const handleClick = () => {
     if (phase === 'waiting' || phase === 'result' || myResult) return;
 
     let time = 0;
@@ -105,7 +139,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
     const resultData: ReflexResult = { playerId: myId!, time, early };
     setMyResult(resultData);
 
-    await fetch(`/api/rooms/${roomId}/game/action`, {
+    fetch(`/api/rooms/${roomId}/game/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event: 'reflex-click', data: resultData }),
@@ -150,26 +184,35 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
     }
 
     if (phase === 'result') {
-      // Sort results
       const sorted = [...results].sort((a, b) => a.time - b.time);
-      const losers = sorted.filter(r => r.early || r.time === sorted[sorted.length - 1]?.time);
+      const fastest = sorted.find(r => !r.early);
+      const slowest = sorted.filter(r => !r.early).pop();
       
       return (
         <div className="flex flex-col gap-4">
           <h2 className="text-2xl font-bold text-center mb-4">Kết Quả Phản Xạ</h2>
           <div className="space-y-2 max-h-60 overflow-y-auto">
-            {sorted.map((r, i) => {
+            {sorted.map((r) => {
               const p = players.find(p => p.id === r.playerId);
-              const isLoser = losers.some(l => l.playerId === r.playerId);
+              const isFastest = fastest && r.playerId === fastest.playerId && !r.early;
+              const isSlowest = (slowest && r.playerId === slowest.playerId && !r.early) || r.early;
+              let badge = '';
+              if (r.early) badge = '❌ Bấm sớm (-1đ)';
+              else if (isFastest) badge = '🥇 Nhanh nhất (+3đ)';
+              else if (isSlowest) badge = '🐢 Chậm nhất (-1đ)';
+
               return (
-                <div key={r.playerId} className={`flex justify-between items-center p-3 rounded-lg border ${isLoser ? 'bg-red-100 border-red-300' : 'bg-gray-50 border-gray-200'}`}>
+                <div key={r.playerId} className={`flex justify-between items-center p-3 rounded-lg border ${isSlowest || r.early ? 'bg-red-100 border-red-300' : isFastest ? 'bg-green-100 border-green-300' : 'bg-gray-50 border-gray-200'}`}>
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{p?.avatar}</span>
                     <span className="font-medium">{p?.name}</span>
                     {r.playerId === myId && <span className="text-xs bg-blue-100 text-blue-800 px-2 rounded-full">Bạn</span>}
                   </div>
-                  <div className="font-mono font-bold">
-                    {r.early ? <span className="text-red-600">Bấm sớm!</span> : `${r.time}ms`}
+                  <div className="text-right">
+                    <div className="font-mono font-bold">
+                      {r.early ? <span className="text-red-600">Bấm sớm!</span> : `${r.time}ms`}
+                    </div>
+                    {badge && <div className="text-xs font-semibold mt-1">{badge}</div>}
                   </div>
                 </div>
               );
@@ -177,7 +220,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
           </div>
           <div className="mt-4 p-4 bg-red-50 text-red-800 rounded-lg text-center border border-red-200">
             <p className="font-semibold">🍻 Hình phạt vòng này:</p>
-            <p>Những người bấm sớm hoặc chậm nhất phải uống 1 ngụm/chén!</p>
+            <p>Người bấm sớm/chậm nhất phải uống 1 ngụm!</p>
           </div>
         </div>
       );

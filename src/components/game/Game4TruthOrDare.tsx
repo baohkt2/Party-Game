@@ -18,21 +18,32 @@ const TRUTHS = [
   "Bí mật đáng xấu hổ nhất của bạn là gì?",
   "Người bạn nhắn tin gần đây nhất là ai?",
   "Bạn đã bao giờ nói dối để tránh đi chơi với bạn bè chưa?",
-  "Điều điên rồ nhất bạn từng làm khi say là gì?"
+  "Điều điên rồ nhất bạn từng làm khi say là gì?",
+  "Bạn có bao giờ stalk ai trong nhóm này không?",
+  "Bạn thực sự nghĩ gì về người ngồi bên trái?",
+  "Lần cuối bạn khóc vì chuyện tình cảm là khi nào?"
 ];
 
 const DARES = [
   "Gọi điện cho người yêu cũ (hoặc crush) và nói 'Tự nhiên nhớ ghê'.",
   "Hát một đoạn nhạc thiếu nhi bằng giọng ma mị.",
   "Đăng một status \"Tôi đang cô đơn\" lên mạng xã hội.",
-  "Uống 1 ngụm bia pha với tương ớt/nước mắm (tùy host).",
-  "Điệu nhảy sexy 15 giây."
+  "Uống 1 ngụm bia pha với tương ớt/nước mắm (tùy chọn).",
+  "Điệu nhảy sexy 15 giây.",
+  "Nhắn tin cho crush hiện tại nói 'Anh/Em thích bạn'.",
+  "Bắt chước 1 con vật trong 30 giây.",
+  "Selfie mặt xấu nhất rồi đăng story."
 ];
 
 export default function Game4TruthOrDare({ roomId, players, isHost }: GameProps) {
   const [phase, setPhase] = useState<GamePhase['truthOrDare']>('selection');
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-  const [promptData, setPromptData] = useState<{ type: 'truth'|'dare', text: string } | null>(null);
+  const [promptData, setPromptData] = useState<{ type: 'truth' | 'dare', text: string } | null>(null);
+
+  // Voting
+  const [votes, setVotes] = useState<Record<string, boolean>>({});
+  const [myVote, setMyVote] = useState<boolean | null>(null);
+  const [voteResult, setVoteResult] = useState<{ success: boolean, yesCount: number, noCount: number } | null>(null);
 
   const myId = typeof window !== 'undefined' ? localStorage.getItem('playerId') : null;
   const currentPlayer = players[currentPlayerIndex % players.length] || players[0];
@@ -42,12 +53,20 @@ export default function Game4TruthOrDare({ roomId, players, isHost }: GameProps)
     const channelName = getRoomChannel(roomId);
     const channel = pusherClient.subscribe(channelName);
 
-    channel.bind('tod-select', (data: { type: 'truth'|'dare', text: string }) => {
+    channel.bind('tod-select', (data: { type: 'truth' | 'dare', text: string }) => {
       setPromptData(data);
       setPhase('prompt');
+      setVotes({});
+      setMyVote(null);
+      setVoteResult(null);
     });
 
-    channel.bind('tod-judge', () => {
+    channel.bind('tod-vote', (data: { voterId: string, success: boolean }) => {
+      setVotes(prev => ({ ...prev, [data.voterId]: data.success }));
+    });
+
+    channel.bind('tod-result', (data: { success: boolean, yesCount: number, noCount: number }) => {
+      setVoteResult(data);
       setPhase('result');
     });
 
@@ -55,60 +74,72 @@ export default function Game4TruthOrDare({ roomId, players, isHost }: GameProps)
       setCurrentPlayerIndex(data.nextIndex);
       setPromptData(null);
       setPhase('selection');
+      setVotes({});
+      setMyVote(null);
+      setVoteResult(null);
     });
 
     return () => {
       channel.unbind('tod-select');
-      channel.unbind('tod-judge');
+      channel.unbind('tod-vote');
+      channel.unbind('tod-result');
       channel.unbind('tod-next');
     };
   }, [roomId]);
 
-  const selectOption = async (type: 'truth' | 'dare') => {
-    const list = type === 'truth' ? TRUTHS : DARES;
-    const text = list[Math.floor(Math.random() * list.length)];
+  // Host auto-tally votes
+  useEffect(() => {
+    if (!isHost || phase !== 'prompt' || !currentPlayer) return;
+    const eligibleVoters = players.filter(p => p.id !== currentPlayer.id).length;
+    if (Object.keys(votes).length < eligibleVoters) return;
 
-    await fetch(`/api/rooms/${roomId}/game/action`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        event: 'tod-select', 
-        data: { type, text } 
-      }),
-    });
-  };
+    const yesCount = Object.values(votes).filter(v => v).length;
+    const noCount = Object.values(votes).filter(v => !v).length;
+    const success = yesCount > noCount;
 
-  const judgeTurn = async (success: boolean) => {
-    // Nếu thành công +2 điểm, thất bại -1
     const currentScore = currentPlayer.gameScores?.game4 || 0;
     const newScore = success ? currentScore + 2 : currentScore - 1;
 
-    await fetch(`/api/rooms/${roomId}/game/score`, {
+    fetch(`/api/rooms/${roomId}/game/score`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        playerId: currentPlayer.id,
-        gameNumber: 4,
-        score: newScore
-      }),
+      body: JSON.stringify({ playerId: currentPlayer.id, gameNumber: 4, score: newScore }),
     });
 
     if (!success) {
-      toast.error(`${currentPlayer.name} bị phạt uống!`);
-    } else {
-      toast.success(`${currentPlayer.name} nhận 2 điểm!`);
+      toast(`${currentPlayer.name} bị phạt uống!`);
     }
 
-    await fetch(`/api/rooms/${roomId}/game/action`, {
+    fetch(`/api/rooms/${roomId}/game/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event: 'tod-judge', data: {} }),
+      body: JSON.stringify({ event: 'tod-result', data: { success, yesCount, noCount } }),
+    });
+  }, [votes, isHost, phase, currentPlayer, players, roomId]);
+
+  const selectOption = (type: 'truth' | 'dare') => {
+    const list = type === 'truth' ? TRUTHS : DARES;
+    const text = list[Math.floor(Math.random() * list.length)];
+    fetch(`/api/rooms/${roomId}/game/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'tod-select', data: { type, text } }),
     });
   };
 
-  const nextTurn = async () => {
+  const castVote = (success: boolean) => {
+    if (myVote !== null) return;
+    setMyVote(success);
+    fetch(`/api/rooms/${roomId}/game/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'tod-vote', data: { voterId: myId, success } }),
+    });
+  };
+
+  const nextTurn = () => {
     const nextIndex = (currentPlayerIndex + 1) % players.length;
-    await fetch(`/api/rooms/${roomId}/game/action`, {
+    fetch(`/api/rooms/${roomId}/game/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event: 'tod-next', data: { nextIndex } }),
@@ -157,24 +188,33 @@ export default function Game4TruthOrDare({ roomId, players, isHost }: GameProps)
             <p className="text-2xl font-semibold">&quot;{promptData.text}&quot;</p>
           </div>
 
-          {!isHost ? (
-            <p className="text-gray-500 text-sm">Chờ host phán quyết...</p>
-          ) : (
-            <div className="flex gap-4 justify-center mt-6">
-              <Button onClick={() => judgeTurn(true)} className="bg-blue-600 hover:bg-blue-700">
-                Qua Ải (+2 điểm)
-              </Button>
-              <Button onClick={() => judgeTurn(false)} variant="destructive">
-                Phạt Uống (-1 điểm)
-              </Button>
+          {isMyTurn ? (
+            <p className="text-gray-500 text-lg animate-pulse">Hãy thực hiện! Đợi mọi người biểu quyết...</p>
+          ) : myVote === null ? (
+            <div className="space-y-3">
+              <p className="font-semibold text-lg">{currentPlayer.name} có qua ải không?</p>
+              <div className="flex gap-4 justify-center">
+                <Button onClick={() => castVote(true)} className="bg-green-600 hover:bg-green-700 text-lg px-8 py-3">
+                  ✅ Qua Ải
+                </Button>
+                <Button onClick={() => castVote(false)} variant="destructive" className="text-lg px-8 py-3">
+                  ❌ Phạt Uống
+                </Button>
+              </div>
             </div>
+          ) : (
+            <p className="text-gray-500">Đã biểu quyết! Chờ mọi người...</p>
           )}
         </div>
       )}
 
-      {phase === 'result' && (
+      {phase === 'result' && voteResult && (
         <div className="space-y-6">
-          <div className="text-2xl font-bold text-gray-800">Đã Phán Quyết Xong!</div>
+          <div className={`p-6 rounded-xl border-2 ${voteResult.success ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
+            <p className="text-4xl mb-2">{voteResult.success ? '🎉' : '😈'}</p>
+            <p className="text-2xl font-bold">{currentPlayer.name} {voteResult.success ? 'Qua Ải! (+2đ)' : 'Phạt Uống! (-1đ)'}</p>
+            <p className="mt-2 text-gray-600">✅ {voteResult.yesCount} phiếu | ❌ {voteResult.noCount} phiếu</p>
+          </div>
           {isHost && (
             <Button size="lg" className="w-full" onClick={nextTurn}>
               Lượt Tiếp Theo ⏭️
