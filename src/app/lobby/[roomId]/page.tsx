@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Player } from '@/types';
 
+import { pusherClient, PUSHER_EVENTS, getRoomChannel } from '@/lib/pusher';
+
 export default function LobbyPage({ params }: { params: Promise<{ roomId: string }> }) {
   const router = useRouter();
   const { roomId } = use(params);
@@ -21,9 +23,7 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
       const res = await fetch(`/api/rooms/${roomId}/players`);
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Không thể tải danh sách');
-      }
+      if (!res.ok) throw new Error(data.error || 'Không thể tải danh sách');
 
       setPlayers(data.data.players);
 
@@ -50,6 +50,26 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
 
     // Fetch initial players
     fetchPlayers();
+
+    // Setup Pusher subscriptions
+    const channelName = getRoomChannel(roomId);
+    const channel = pusherClient.subscribe(channelName);
+
+    channel.bind(PUSHER_EVENTS.PLAYER_JOINED, (data: { player: Player, players: Player[] }) => {
+      // Use the returned player list or append it
+      // Let's just refetch to be perfectly in sync with host/DB, or use data.players if passed
+      fetchPlayers();
+    });
+
+    channel.bind(PUSHER_EVENTS.GAME_STARTED, () => {
+      toast.success('Host đã bắt đầu game!');
+      router.push(`/game/${roomId}`);
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusherClient.unsubscribe(channelName);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 

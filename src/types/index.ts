@@ -9,6 +9,8 @@ export interface Player {
     game1: number;
     game2: number;
     game3: number;
+    game4: number;
+    game5: number;
   };
 }
 
@@ -32,8 +34,10 @@ export interface GameState {
 // Game-specific types
 export type GamePhase = {
   reflex: 'waiting' | 'ready' | 'go' | 'result';
-  wheel: 'spin' | 'challenge' | 'judge' | 'result';
+  wheel: 'submit' | 'spin' | 'challenge' | 'judge' | 'result';
   whoisit: 'question' | 'countdown' | 'voting' | 'result';
+  truthOrDare: 'selection' | 'prompt' | 'judge' | 'result';
+  poker: 'phase1' | 'phase2' | 'phase3' | 'result';
 };
 
 // API Response wrapper

@@ -1,0 +1,19 @@
+(node:23168) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/game/Party-Game/test_game.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\game\Party-Game\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Launching browser...
+Host navigating to home...
+Test failed: TimeoutError: Waiting for selector `input[placeholder="Nhß║¡p t├¬n cß╗ºa bß║ín..."]` failed
+    at CSSQueryHandler.waitFor (file:///D:/game/Party-Game/node_modules/puppeteer-core/lib/esm/puppeteer/common/QueryHandler.js:211:46)
+    at async CdpFrame.waitForSelector (file:///D:/game/Party-Game/node_modules/puppeteer-core/lib/esm/puppeteer/api/Frame.js:541:21)
+    at async CdpPage.waitForSelector (file:///D:/game/Party-Game/node_modules/puppeteer-core/lib/esm/puppeteer/api/Page.js:1387:20)
+    at async file:///D:/game/Party-Game/test_game.js:17:5 {
+  cause: TimeoutError: Waiting failed: 30000ms exceeded
+      at new WaitTask (file:///D:/game/Party-Game/node_modules/puppeteer-core/lib/esm/puppeteer/common/WaitTask.js:46:34)
+      at IsolatedWorld.waitForFunction (file:///D:/game/Party-Game/node_modules/puppeteer-core/lib/esm/puppeteer/api/Realm.js:22:26)
+      at CSSQueryHandler.waitFor (file:///D:/game/Party-Game/node_modules/puppeteer-core/lib/esm/puppeteer/common/QueryHandler.js:176:95)
+      at async CdpFrame.waitForSelector (file:///D:/game/Party-Game/node_modules/puppeteer-core/lib/esm/puppeteer/api/Frame.js:541:21)
+      at async CdpPage.waitForSelector (file:///D:/game/Party-Game/node_modules/puppeteer-core/lib/esm/puppeteer/api/Page.js:1387:20)
+      at async file:///D:/game/Party-Game/test_game.js:17:5
+}

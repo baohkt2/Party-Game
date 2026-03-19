@@ -8,14 +8,16 @@ import { Room, Player } from '@/types';
 
 export async function createRoom(roomCode: string, hostName: string) {
   try {
+    // Generate playerId first
+    const playerId = nanoid();
+
     // Create room
     await sql`
       INSERT INTO rooms (id, host_id, status, current_game)
-      VALUES (${roomCode}, ${hostName}, 'waiting', 0)
+      VALUES (${roomCode}, ${playerId}, 'waiting', 0)
     `;
 
     // Create host player with session_id
-    const playerId = nanoid();
     await sql`
       INSERT INTO players (id, room_id, name, avatar, session_id)
       VALUES (${playerId}, ${roomCode}, ${hostName}, '👑', ${playerId})
@@ -115,6 +117,8 @@ export async function getPlayers(roomCode: string): Promise<Player[]> {
         game1: row.game1_score || 0,
         game2: row.game2_score || 0,
         game3: row.game3_score || 0,
+        game4: row.game4_score || 0,
+        game5: row.game5_score || 0,
       },
     }));
   } catch (error) {
@@ -154,7 +158,7 @@ export async function updatePlayerScore(playerId: string, game: number, score: n
     await sql.query(`
       UPDATE players 
       SET ${column} = $1, 
-          total_score = COALESCE(game1_score, 0) + COALESCE(game2_score, 0) + COALESCE(game3_score, 0)
+          total_score = COALESCE(game1_score, 0) + COALESCE(game2_score, 0) + COALESCE(game3_score, 0) + COALESCE(game4_score, 0) + COALESCE(game5_score, 0)
       WHERE id = $2
     `, [score, playerId]);
   } catch (error) {
