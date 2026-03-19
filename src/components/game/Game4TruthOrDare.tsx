@@ -1,17 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Player, GamePhase } from '@/types';
+import { GamePhase } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { toast } from 'sonner';
-
-interface GameProps {
-  roomId: string;
-  players: Player[];
-  isHost: boolean;
-}
+import { GameProps } from '@/lib/gameRegistry';
 
 const TRUTHS = [
   "Nói tên người bạn từng crush trong nhóm này (nếu có)?",

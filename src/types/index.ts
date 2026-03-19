@@ -1,17 +1,24 @@
-// TypeScript Types cho Party Game
+// TypeScript Types cho Party Game – Modular Architecture
 
 export interface Player {
   id: string;
   name: string;
   avatar: string;
   totalScore: number;
-  gameScores: {
-    game1: number;
-    game2: number;
-    game3: number;
-    game4: number;
-    game5: number;
+  gameScores: Record<string, number>;  // roundIndex → score
+}
+
+export interface RoundConfig {
+  gameId: string;       // 'reflex', 'roulette', etc.
+  subRounds: number;    // number of sub-rounds in this round
+  rewards: {
+    win: number;
+    lose: number;
   };
+}
+
+export interface RoomConfig {
+  rounds: RoundConfig[];
 }
 
 export interface Room {
@@ -19,10 +26,11 @@ export interface Room {
   hostId: string;
   players: Player[];
   status: RoomStatus;
-  currentGame: number;
+  currentGame: number;    // current round index (0-based in config, 1-based in display)
+  config?: RoomConfig;
 }
 
-export type RoomStatus = 'waiting' | 'playing' | 'finished';
+export type RoomStatus = 'waiting' | 'configuring' | 'playing' | 'finished';
 
 export interface GameState {
   roomId: string;
@@ -31,7 +39,7 @@ export interface GameState {
   data: Record<string, unknown>;
 }
 
-// Game-specific types
+// Legacy GamePhase types (kept for component compatibility)
 export type GamePhase = {
   reflex: 'waiting' | 'ready' | 'go' | 'result';
   wheel: 'submit' | 'spin' | 'challenge' | 'judge' | 'result';

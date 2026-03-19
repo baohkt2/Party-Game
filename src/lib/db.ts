@@ -1,26 +1,23 @@
-// Database helper functions using Vercel Postgres
+// Database helper functions using Vercel Postgres – Modular Architecture
 
 import { sql } from '@vercel/postgres';
 import { nanoid } from 'nanoid';
-import { Room, Player } from '@/types';
+import { Room, Player, RoomConfig } from '@/types';
 
 // ==================== ROOM OPERATIONS ====================
 
 export async function createRoom(roomCode: string, hostName: string) {
   try {
-    // Generate playerId first
     const playerId = nanoid();
 
-    // Create room
     await sql`
-      INSERT INTO rooms (id, host_id, status, current_game)
-      VALUES (${roomCode}, ${playerId}, 'waiting', 0)
+      INSERT INTO rooms (id, host_id, status, current_game, config)
+      VALUES (${roomCode}, ${playerId}, 'waiting', 0, '{"rounds":[]}')
     `;
 
-    // Create host player with session_id
     await sql`
-      INSERT INTO players (id, room_id, name, avatar, session_id)
-      VALUES (${playerId}, ${roomCode}, ${hostName}, '👑', ${playerId})
+      INSERT INTO players (id, room_id, name, avatar, session_id, scores)
+      VALUES (${playerId}, ${roomCode}, ${hostName}, '👑', ${playerId}, '{}')
     `;
 
     return { roomId: roomCode, playerId };
@@ -32,16 +29,14 @@ export async function createRoom(roomCode: string, hostName: string) {
 
 export async function joinRoom(roomCode: string, playerName: string) {
   try {
-    // Check if room exists and is waiting
     const room = await sql`
-      SELECT * FROM rooms WHERE id = ${roomCode} AND status = 'waiting'
+      SELECT * FROM rooms WHERE id = ${roomCode} AND status IN ('waiting', 'configuring')
     `;
 
     if (room.rows.length === 0) {
       throw new Error('Room not found or already started');
     }
 
-    // Check player count
     const playerCount = await sql`
       SELECT COUNT(*) as count FROM players WHERE room_id = ${roomCode}
     `;
@@ -50,7 +45,6 @@ export async function joinRoom(roomCode: string, playerName: string) {
       throw new Error('Room is full (max 10 players)');
     }
 
-    // Check duplicate name
     const existingPlayer = await sql`
       SELECT id FROM players WHERE room_id = ${roomCode} AND name = ${playerName}
     `;
@@ -59,14 +53,13 @@ export async function joinRoom(roomCode: string, playerName: string) {
       throw new Error('Name already taken in this room');
     }
 
-    // Add player
     const playerId = nanoid();
-    const avatars = ['😀', '😎', '🤓', '😊', '🥳', '🤪', '😇', '🤠'];
+    const avatars = ['😀', '😎', '🤓', '😊', '🥳', '🤪', '😇', '🤠', '🦊', '🐻'];
     const randomAvatar = avatars[Math.floor(Math.random() * avatars.length)];
 
     await sql`
-      INSERT INTO players (id, room_id, name, avatar, session_id)
-      VALUES (${playerId}, ${roomCode}, ${playerName}, ${randomAvatar}, ${playerId})
+      INSERT INTO players (id, room_id, name, avatar, session_id, scores)
+      VALUES (${playerId}, ${roomCode}, ${playerName}, ${randomAvatar}, ${playerId}, '{}')
     `;
 
     return { roomId: roomCode, playerId };
@@ -78,16 +71,16 @@ export async function joinRoom(roomCode: string, playerName: string) {
 
 export async function getRoom(roomCode: string): Promise<Room | null> {
   try {
-    const result = await sql`
-      SELECT * FROM rooms WHERE id = ${roomCode}
-    `;
-
-    if (result.rows.length === 0) {
-      return null;
-    }
+    const result = await sql`SELECT * FROM rooms WHERE id = ${roomCode}`;
+    if (result.rows.length === 0) return null;
 
     const room = result.rows[0];
     const players = await getPlayers(roomCode);
+
+    let config: RoomConfig = { rounds: [] };
+    try {
+      if (room.config) config = typeof room.config === 'string' ? JSON.parse(room.config) : room.config;
+    } catch { /* fallback empty */ }
 
     return {
       id: room.id,
@@ -95,6 +88,7 @@ export async function getRoom(roomCode: string): Promise<Room | null> {
       status: room.status,
       currentGame: room.current_game,
       players,
+      config,
     };
   } catch (error) {
     console.error('Error getting room:', error);
@@ -108,19 +102,29 @@ export async function getPlayers(roomCode: string): Promise<Player[]> {
       SELECT * FROM players WHERE room_id = ${roomCode} ORDER BY joined_at ASC
     `;
 
-    return result.rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      avatar: row.avatar,
-      totalScore: row.total_score || 0,
-      gameScores: {
-        game1: row.game1_score || 0,
-        game2: row.game2_score || 0,
-        game3: row.game3_score || 0,
-        game4: row.game4_score || 0,
-        game5: row.game5_score || 0,
-      },
-    }));
+    return result.rows.map((row) => {
+      let scores: Record<string, number> = {};
+      try {
+        if (row.scores) scores = typeof row.scores === 'string' ? JSON.parse(row.scores) : row.scores;
+      } catch { /* fallback empty */ }
+
+      // Also read legacy columns if present
+      const legacyScores: Record<string, number> = {};
+      for (let i = 1; i <= 5; i++) {
+        const v = row[`game${i}_score`];
+        if (v && Number(v) !== 0) legacyScores[`round_${i}`] = Number(v);
+      }
+
+      const merged = { ...legacyScores, ...scores };
+
+      return {
+        id: row.id,
+        name: row.name,
+        avatar: row.avatar,
+        totalScore: row.total_score || 0,
+        gameScores: merged,
+      };
+    });
   } catch (error) {
     console.error('Error getting players:', error);
     return [];
@@ -133,16 +137,10 @@ export async function updateRoomStatus(roomCode: string, status: string, current
   try {
     if (currentGame !== undefined) {
       await sql`
-        UPDATE rooms 
-        SET status = ${status}, current_game = ${currentGame}
-        WHERE id = ${roomCode}
+        UPDATE rooms SET status = ${status}, current_game = ${currentGame} WHERE id = ${roomCode}
       `;
     } else {
-      await sql`
-        UPDATE rooms 
-        SET status = ${status}
-        WHERE id = ${roomCode}
-      `;
+      await sql`UPDATE rooms SET status = ${status} WHERE id = ${roomCode}`;
     }
   } catch (error) {
     console.error('Error updating room status:', error);
@@ -150,22 +148,34 @@ export async function updateRoomStatus(roomCode: string, status: string, current
   }
 }
 
-export async function updatePlayerScore(playerId: string, game: number, score: number) {
+export async function saveRoomConfig(roomCode: string, config: RoomConfig) {
   try {
-    const column = `game${game}_score`;
-    
-    // First update the specific game score
-    await sql.query(`
-      UPDATE players 
-      SET ${column} = $1
-      WHERE id = $2
-    `, [score, playerId]);
+    const configStr = JSON.stringify(config);
+    await sql`UPDATE rooms SET config = ${configStr}, status = 'configuring' WHERE id = ${roomCode}`;
+  } catch (error) {
+    console.error('Error saving room config:', error);
+    throw error;
+  }
+}
 
-    // Then recalculate total_score from the now-updated values
+export async function updatePlayerScore(playerId: string, roundKey: string, score: number) {
+  try {
+    // Read current scores JSON
+    const result = await sql`SELECT scores, total_score FROM players WHERE id = ${playerId}`;
+    if (result.rows.length === 0) return;
+
+    let scores: Record<string, number> = {};
+    try {
+      const raw = result.rows[0].scores;
+      if (raw) scores = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch { /* fallback */ }
+
+    scores[roundKey] = score;
+    const total = Object.values(scores).reduce((s, v) => s + v, 0);
+    const scoresStr = JSON.stringify(scores);
+
     await sql`
-      UPDATE players 
-      SET total_score = COALESCE(game1_score, 0) + COALESCE(game2_score, 0) + COALESCE(game3_score, 0) + COALESCE(game4_score, 0) + COALESCE(game5_score, 0)
-      WHERE id = ${playerId}
+      UPDATE players SET scores = ${scoresStr}, total_score = ${total} WHERE id = ${playerId}
     `;
   } catch (error) {
     console.error('Error updating player score:', error);
@@ -176,7 +186,6 @@ export async function updatePlayerScore(playerId: string, game: number, score: n
 // ==================== UTILITY FUNCTIONS ====================
 
 export function generateRoomCode(): string {
-  // Generate 6-character code, excluding confusing characters (0, O, 1, I, L)
   const chars = '234567890ABCDEFGHJKMNPQRSTUVWXYZ';
   let code = '';
   for (let i = 0; i < 6; i++) {

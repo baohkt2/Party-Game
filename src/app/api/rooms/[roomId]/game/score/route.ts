@@ -8,14 +8,16 @@ export async function POST(
 ) {
   try {
     const { roomId } = await params;
-    const { playerId, gameNumber, score } = await request.json();
+    const { playerId, roundKey, score, gameNumber } = await request.json();
 
-    await updatePlayerScore(playerId, gameNumber, score);
+    // Support both new (roundKey) and legacy (gameNumber)
+    const key = roundKey || `round_${gameNumber}`;
 
-    // Fetch updated players to broadcast
+    await updatePlayerScore(playerId, key, score);
+
     const updatedPlayers = await getPlayers(roomId);
     const channel = getRoomChannel(roomId);
-    
+
     await pusherServer.trigger(channel, PUSHER_EVENTS.SCORE_UPDATE, {
       players: updatedPlayers,
     });
@@ -23,9 +25,6 @@ export async function POST(
     return NextResponse.json({ success: true, data: updatedPlayers });
   } catch (error) {
     console.error('Error updating score:', error);
-    return NextResponse.json(
-      { error: 'Lỗi khi cập nhật điểm' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Lỗi khi cập nhật điểm' }, { status: 500 });
   }
 }

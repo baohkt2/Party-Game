@@ -12,25 +12,17 @@ export async function POST(
     const { playerId } = await request.json();
 
     const room = await getRoom(roomId);
-    if (!room) {
-      return NextResponse.json({ error: 'Phòng không tồn tại' }, { status: 404 });
-    }
+    if (!room) return NextResponse.json({ error: 'Phòng không tồn tại' }, { status: 404 });
+    if (room.hostId !== playerId) return NextResponse.json({ error: 'Chỉ host mới có thể reset' }, { status: 403 });
 
-    if (room.hostId !== playerId) {
-      return NextResponse.json({ error: 'Chỉ host mới có thể reset' }, { status: 403 });
-    }
-
-    // Reset room
     await updateRoomStatus(roomId, 'waiting', 0);
 
     // Reset all player scores
-    await sql`
-      UPDATE players 
-      SET game1_score = 0, game2_score = 0, game3_score = 0, game4_score = 0, game5_score = 0, total_score = 0
-      WHERE room_id = ${roomId}
-    `;
+    await sql`UPDATE players SET scores = '{}', total_score = 0 WHERE room_id = ${roomId}`;
 
-    // Broadcast reset
+    // Also reset config
+    await sql`UPDATE rooms SET config = '{"rounds":[]}' WHERE id = ${roomId}`;
+
     const channel = getRoomChannel(roomId);
     await pusherServer.trigger(channel, 'game-reset', { roomId });
 
