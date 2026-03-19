@@ -1,12 +1,13 @@
 'use client';
 
+import { use } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
-export default function GamePage({ params }: { params: { roomId: string } }) {
+export default function GamePage({ params }: { params: Promise<{ roomId: string }> }) {
   const router = useRouter();
-  const { roomId } = params;
+  const { roomId } = use(params);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-500 to-purple-600 p-4">

@@ -6,10 +6,10 @@ import { pusherServer, PUSHER_EVENTS, getRoomChannel } from '@/lib/pusher';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const { roomId } = params;
+    const { roomId } = await params;
     const { playerId } = await request.json();
 
     // Get room

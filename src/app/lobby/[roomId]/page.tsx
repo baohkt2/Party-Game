@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Player } from '@/types';
 
-export default function LobbyPage({ params }: { params: { roomId: string } }) {
+export default function LobbyPage({ params }: { params: Promise<{ roomId: string }> }) {
   const router = useRouter();
-  const { roomId } = params;
-  
+  const { roomId } = use(params);
+
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [isHost, setIsHost] = useState(false);
@@ -55,7 +55,7 @@ export default function LobbyPage({ params }: { params: { roomId: string } }) {
 
   const handleStartGame = async () => {
     const playerId = localStorage.getItem('playerId');
-    
+
     if (!playerId) {
       toast.error('Không tìm thấy thông tin người chơi');
       return;
@@ -103,7 +103,7 @@ export default function LobbyPage({ params }: { params: { roomId: string } }) {
         <Card className="p-6 mb-4">
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold mb-2">🎮 Phòng Chờ</h1>
-            <div 
+            <div
               className="text-2xl font-mono bg-gray-100 py-2 px-4 rounded-lg inline-block cursor-pointer hover:bg-gray-200 transition"
               onClick={copyRoomCode}
             >
@@ -127,7 +127,7 @@ export default function LobbyPage({ params }: { params: { roomId: string } }) {
                 🔄 Làm mới
               </Button>
             </div>
-            
+
             {players.map((player, idx) => (
               <div
                 key={player.id}

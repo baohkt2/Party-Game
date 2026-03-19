@@ -5,10 +5,10 @@ import { getRoom, getPlayers } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const { roomId } = params;
+    const { roomId } = await params;
 
     // Get room
     const room = await getRoom(roomId);
