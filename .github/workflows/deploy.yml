@@ -92,7 +92,7 @@ jobs:
 
             DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
             if [ -z "$DEPLOY_PATH" ]; then
-              DEPLOY_PATH="/opt/party-game"
+              DEPLOY_PATH="/home/ubuntu/party-game/"
             fi
 
             cd "$DEPLOY_PATH"
