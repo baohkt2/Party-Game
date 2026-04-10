@@ -15,8 +15,10 @@ interface RequestItem {
   text: string;
 }
 
+type RoulettePhase = GamePhase['wheel'] | 'result';
+
 export default function Game2Roulette({ roomId, players, isHost }: GameProps) {
-  const [phase, setPhase] = useState<GamePhase['wheel']>('submit');
+  const [phase, setPhase] = useState<RoulettePhase>('submit');
   const [myRequests, setMyRequests] = useState(['', '', '']);
   const [allRequests, setAllRequests] = useState<RequestItem[]>([]);
   const [submittedPlayers, setSubmittedPlayers] = useState<string[]>([]);
@@ -80,7 +82,7 @@ export default function Game2Roulette({ roomId, players, isHost }: GameProps) {
 
     channel.bind('roulette-result', (data: { success: boolean, yesCount: number, noCount: number }) => {
       setVoteResult(data);
-      setPhase('result' as any);
+      setPhase('result');
     });
 
     channel.bind('roulette-next', () => {

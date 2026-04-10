@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { GamePhase } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
-import { toast } from 'sonner';
 import { GameProps } from '@/lib/gameRegistry';
 
 const QUESTIONS = [
@@ -27,9 +26,26 @@ export default function Game3WhoIsIt({ roomId, players, isHost }: GameProps) {
   const [countdown, setCountdown] = useState(3);
   const [votes, setVotes] = useState<Record<string, string>>({});
   const [myVote, setMyVote] = useState<string | null>(null);
-  const [scored, setScored] = useState(false);
+  const scoredRef = useRef(false);
 
   const myId = typeof window !== 'undefined' ? localStorage.getItem('playerId') : null;
+
+  const nextQuestion = useCallback(() => {
+    const randomQ = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+    fetch(`/api/rooms/${roomId}/game/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'whoisit-new-question', data: { question: randomQ } }),
+    });
+  }, [roomId]);
+
+  const revealResult = useCallback(() => {
+    fetch(`/api/rooms/${roomId}/game/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'whoisit-result', data: {} }),
+    });
+  }, [roomId]);
 
   useEffect(() => {
     const channelName = getRoomChannel(roomId);
@@ -40,7 +56,7 @@ export default function Game3WhoIsIt({ roomId, players, isHost }: GameProps) {
       setPhase('question');
       setVotes({});
       setMyVote(null);
-      setScored(false);
+      scoredRef.current = false;
     });
 
     channel.bind('whoisit-countdown-start', () => {
@@ -78,19 +94,19 @@ export default function Game3WhoIsIt({ roomId, players, isHost }: GameProps) {
     if (isHost && phase === 'question' && !currentQuestion) {
       nextQuestion();
     }
-  }, [isHost, phase, currentQuestion]);
+  }, [isHost, phase, currentQuestion, nextQuestion]);
 
   // Host auto-end voting if all voted
   useEffect(() => {
     if (isHost && phase === 'voting' && Object.keys(votes).length >= players.length) {
       revealResult();
     }
-  }, [votes, players.length, isHost, phase]);
+  }, [votes, players.length, isHost, phase, revealResult]);
 
   // Host auto-score on result
   useEffect(() => {
-    if (!isHost || phase !== 'result' || scored) return;
-    setScored(true);
+    if (!isHost || phase !== 'result' || scoredRef.current) return;
+    scoredRef.current = true;
 
     const voteCounts: Record<string, number> = {};
     Object.values(votes).forEach(votedId => {
@@ -129,16 +145,7 @@ export default function Game3WhoIsIt({ roomId, players, isHost }: GameProps) {
       );
     });
     Promise.all(scoreUpdates);
-  }, [phase, isHost, scored, votes, players, roomId]);
-
-  const nextQuestion = () => {
-    const randomQ = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
-    fetch(`/api/rooms/${roomId}/game/action`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event: 'whoisit-new-question', data: { question: randomQ } }),
-    });
-  };
+  }, [phase, isHost, votes, players, roomId]);
 
   const startCountdown = () => {
     fetch(`/api/rooms/${roomId}/game/action`, {
@@ -155,14 +162,6 @@ export default function Game3WhoIsIt({ roomId, players, isHost }: GameProps) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event: 'whoisit-vote', data: { voterId: myId, votedId: playerId } }),
-    });
-  };
-
-  const revealResult = () => {
-    fetch(`/api/rooms/${roomId}/game/action`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event: 'whoisit-result', data: {} }),
     });
   };
 

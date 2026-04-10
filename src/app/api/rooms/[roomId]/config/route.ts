@@ -36,7 +36,7 @@ export async function GET(
     const room = await getRoom(roomId);
     if (!room) return NextResponse.json({ error: 'Phòng không tồn tại' }, { status: 404 });
     return NextResponse.json({ success: true, data: { config: room.config } });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Lỗi' }, { status: 500 });
   }
 }

@@ -41,7 +41,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
         setIsHost(data.data.hostId === playerId);
         if (data.data.config) setConfig(data.data.config);
         setLoading(false);
-      } catch (error) {
+      } catch {
         toast.error('Không thể tải trạng thái game');
       }
     };
@@ -61,7 +61,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
     loadGameComponent(currentRound.gameId).then(comp => {
       setGameComponent(() => comp);
     });
-  }, [currentRound?.gameId]);
+  }, [currentRound]);
 
   // Confetti on game over
   useEffect(() => {

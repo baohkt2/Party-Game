@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card } from '@/components/ui/card';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
-import { toast } from 'sonner';
 import { GameProps } from '@/lib/gameRegistry';
 
 type CardType = { suit: '♠' | '♣' | '♦' | '♥', rank: string, value: number };
@@ -54,7 +52,7 @@ const INITIAL_STATE: PokerState = {
 export default function Game5Poker({ roomId, players, isHost }: GameProps) {
   const [state, setState] = useState<PokerState>(INITIAL_STATE);
   const [hostDeck, setHostDeck] = useState<CardType[]>([]);
-  const [scored, setScored] = useState(false);
+  const scoredRef = useRef(false);
   const myId = typeof window !== 'undefined' ? localStorage.getItem('playerId') : null;
 
   useEffect(() => {
@@ -64,8 +62,8 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
   }, [roomId]);
 
   useEffect(() => {
-    if (!isHost || state.phase !== 'result' || scored) return;
-    setScored(true);
+    if (!isHost || state.phase !== 'result' || scoredRef.current) return;
+    scoredRef.current = true;
     const ranked = state.activePlayers
       .map(pId => ({ id: pId, score: calculateHand(state.hands[pId]) }))
       .sort((a, b) => b.score - a.score);
@@ -87,7 +85,7 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
       }).then(() => {}));
     });
     Promise.all(updates);
-  }, [state.phase, isHost, scored, state.activePlayers, state.hands, players, roomId]);
+  }, [state.phase, isHost, state.activePlayers, state.hands, players, roomId]);
 
   const broadcastState = useCallback((newState: PokerState) => {
     setState(newState);
@@ -105,7 +103,7 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
       const hands: Record<string, CardType[]> = {};
       const active = players.map(p => p.id);
       active.forEach(pId => { hands[pId] = [deck.pop()!]; });
-      setHostDeck(deck); setScored(false);
+      setHostDeck(deck); scoredRef.current = false;
       newState = { phase: 'phase1', hands, activePlayers: active, bets: {}, pot: 0, actedThisRound: [], currentBet: 1 };
     } else {
       const nextPhase: PokerPhase = state.phase === 'phase1' ? 'phase2' : state.phase === 'phase2' ? 'phase3' : 'result';
@@ -121,7 +119,7 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
 
   const handleAction = (action: 'call' | 'raise' | 'double' | 'fold') => {
     if (!myId) return;
-    let newState = { ...state };
+    const newState = { ...state };
     let betAmount = 0;
     switch (action) {
       case 'call': betAmount = state.currentBet; break;

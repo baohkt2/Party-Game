@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { GamePhase } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,10 +19,18 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
   const [results, setResults] = useState<ReflexResult[]>([]);
   const [myResult, setMyResult] = useState<ReflexResult | null>(null);
   const [startTime, setStartTime] = useState<number>(0);
-  const [scored, setScored] = useState(false);
+  const scoredRef = useRef(false);
   
   const timeoutRef = useRef<NodeJS.Timeout>(null);
   const myId = typeof window !== 'undefined' ? localStorage.getItem('playerId') : null;
+
+  const endRound = useCallback(() => {
+    fetch(`/api/rooms/${roomId}/game/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'reflex-end', data: {} }),
+    });
+  }, [roomId]);
 
   useEffect(() => {
     const channelName = getRoomChannel(roomId);
@@ -32,7 +40,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
       setPhase('ready');
       setResults([]);
       setMyResult(null);
-      setScored(false);
+      scoredRef.current = false;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         setPhase('go');
@@ -64,12 +72,12 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
     if (isHost && phase === 'go' && results.length === players.length && players.length > 0) {
       endRound();
     }
-  }, [results, players.length, isHost, phase]);
+  }, [results, players.length, isHost, phase, endRound]);
 
   // Host auto-score khi vào result
   useEffect(() => {
-    if (!isHost || phase !== 'result' || scored || results.length === 0) return;
-    setScored(true);
+    if (!isHost || phase !== 'result' || scoredRef.current || results.length === 0) return;
+    scoredRef.current = true;
 
     const sorted = [...results].sort((a, b) => a.time - b.time);
     const fastest = sorted.find(r => !r.early);
@@ -98,7 +106,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
       }
     });
     Promise.all(scoreUpdates);
-  }, [phase, isHost, scored, results, players, roomId]);
+  }, [phase, isHost, results, players, roomId]);
 
   const startGame = () => {
     const delay = Math.floor(Math.random() * 4000) + 2000;
@@ -106,14 +114,6 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event: 'reflex-start', data: { delay } }),
-    });
-  };
-
-  const endRound = () => {
-    fetch(`/api/rooms/${roomId}/game/action`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event: 'reflex-end', data: {} }),
     });
   };
 

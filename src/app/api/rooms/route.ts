@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createRoom, generateRoomCode } from '@/lib/db';
-import { pusherServer, PUSHER_EVENTS } from '@/lib/pusher';
 
 export async function POST(request: NextRequest) {
   try {
