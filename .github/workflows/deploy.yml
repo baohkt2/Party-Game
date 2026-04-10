@@ -76,11 +76,6 @@ jobs:
     name: Deploy to server
     runs-on: ubuntu-22.04
     needs: build_and_push
-    if: |
-      secrets.SERVER_HOST != '' &&
-      secrets.SERVER_USERNAME != '' &&
-      secrets.SERVER_SSH_KEY != '' &&
-      secrets.GHCR_PAT != ''
 
     steps:
       - name: Deploy via SSH
