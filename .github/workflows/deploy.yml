@@ -57,12 +57,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image (linux/arm64)
+      - name: Build and push Docker image (linux/amd64)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/arm64
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ steps.vars.outputs.image }}:latest
