@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: build_and_push
     if: |
-      secrets.DEPLOY_HOST != '' &&
+      secrets.SERVER_HOST != '' &&
       secrets.SERVER_USERNAME != '' &&
       secrets.SERVER_SSH_KEY != '' &&
       secrets.GHCR_PAT != ''
@@ -86,7 +86,7 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
+          host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
