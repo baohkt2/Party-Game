@@ -10,10 +10,40 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ─── Job 1: Lint → Build Docker image → Push lên GHCR ──────────────────────
+  # ─── Job 1: Lint nhanh để fail sớm, tránh build thừa ────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Restore node_modules cache
+        id: node-modules-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node20-node-modules-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Lint project
+        run: npm run lint
+
+  # ─── Job 2: Build Docker image → Push lên GHCR ─────────────────────────────
   build_and_push:
     name: Build, test, and publish image
     runs-on: ubuntu-22.04
+    needs: lint
     permissions:
       contents: read
       packages: write
@@ -30,11 +60,16 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Restore node_modules cache
+        id: node-modules-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node20-node-modules-${{ hashFiles('package-lock.json') }}
 
-      - name: Lint project
-        run: npm run lint
+      - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       # Cần QEMU + Buildx để cross-compile ARM64 trên runner amd64
       - name: Setup QEMU
@@ -74,7 +109,7 @@ jobs:
             NEXT_PUBLIC_PUSHER_KEY=${{ secrets.NEXT_PUBLIC_PUSHER_KEY }}
             NEXT_PUBLIC_PUSHER_CLUSTER=${{ secrets.NEXT_PUBLIC_PUSHER_CLUSTER }}
 
-  # ─── Job 2: SSH vào server → pull image mới → docker compose up ─────────────
+  # ─── Job 3: SSH vào server → pull image mới → docker compose up ─────────────
   deploy:
     name: Deploy to server
     runs-on: ubuntu-22.04

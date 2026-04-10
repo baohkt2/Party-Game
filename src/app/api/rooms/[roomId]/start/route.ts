@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateRoomStatus, getPlayers, getRoom } from '@/lib/db';
+import { updateRoomStatus, getRoom } from '@/lib/db';
 import { pusherServer, PUSHER_EVENTS, getRoomChannel } from '@/lib/pusher';
 
 export async function POST(
@@ -13,9 +13,6 @@ export async function POST(
     const room = await getRoom(roomId);
     if (!room) return NextResponse.json({ error: 'Phòng không tồn tại' }, { status: 404 });
     if (room.hostId !== playerId) return NextResponse.json({ error: 'Chỉ host mới có thể bắt đầu' }, { status: 403 });
-
-    const players = await getPlayers(roomId);
-    if (players.length < 2) return NextResponse.json({ error: 'Cần ít nhất 2 người chơi' }, { status: 400 });
 
     // Validate config
     if (!room.config || room.config.rounds.length === 0) {

@@ -117,7 +117,7 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
 
           {players.length < 2 && (
             <p className="text-center text-white/20 text-sm mt-4 py-2">
-              Đợi thêm người chơi tham gia...
+              Bạn có thể bắt đầu ngay, hoặc chờ thêm người chơi để vui hơn.
             </p>
           )}
         </div>
@@ -128,9 +128,8 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
             size="lg"
             className="w-full py-6 text-lg font-black bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 border-0 shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]"
             onClick={goToConfig}
-            disabled={players.length < 2}
           >
-            {players.length < 2 ? '⏳ Chờ thêm người chơi...' : '⚙️ Cấu hình & Bắt đầu'}
+            ⚙️ Cấu hình & Bắt đầu
           </Button>
         ) : (
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center">

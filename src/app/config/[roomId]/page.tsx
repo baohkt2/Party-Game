@@ -76,7 +76,6 @@ export default function ConfigPage({ params }: { params: Promise<{ roomId: strin
 
   const startGame = async () => {
     if (rounds.length === 0) { toast.error('Thêm ít nhất 1 vòng chơi'); return; }
-    if (players.length < 2) { toast.error('Cần ít nhất 2 người chơi'); return; }
 
     setSaving(true);
     const playerId = localStorage.getItem('playerId');
@@ -227,7 +226,7 @@ export default function ConfigPage({ params }: { params: Promise<{ roomId: strin
               size="lg"
               className="w-full py-6 text-lg font-black bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 border-0 shadow-lg shadow-purple-500/20"
               onClick={startGame}
-              disabled={saving || rounds.length === 0 || players.length < 2}
+              disabled={saving || rounds.length === 0}
             >
               {saving ? '⏳ Đang lưu...' : `🚀 Bắt Đầu (${rounds.length} vòng)`}
             </Button>
