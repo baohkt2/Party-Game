@@ -1,7 +1,7 @@
 services:
   app:
     image: ${APP_IMAGE:-party-game:local}
-    platform: linux/arm64
+    platform: linux/amd64 
     build:
       context: .
       dockerfile: Dockerfile
@@ -30,7 +30,7 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
-    platform: linux/arm64
+    platform: linux/amd64
     container_name: party-game-nginx
     depends_on:
       app:
