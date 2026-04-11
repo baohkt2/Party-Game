@@ -59,6 +59,7 @@ export function PlayerAvatar({ avatar, name, size = 'md', className }: PlayerAva
         width={px}
         height={px}
         className="h-full w-full object-cover"
+        unoptimized
       />
     </span>
   );
