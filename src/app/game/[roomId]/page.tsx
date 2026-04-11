@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState, useRef, ComponentType } from 'react';
+import { use, useCallback, useEffect, useState, useRef, ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/ui/player-avatar';
@@ -30,33 +30,46 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
   const totalRounds = config.rounds.length;
   const isGameOver = currentGame > totalRounds && totalRounds > 0;
 
+  const fetchState = useCallback(async () => {
+    try {
+      const playerId = getSessionPlayerId();
+      if (!playerId) {
+        router.push('/');
+        return;
+      }
+
+      const res = await fetch(`/api/rooms/${roomId}/state`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setPlayers(data.data.players);
+      setCurrentGame(data.data.currentGame);
+      setIsHost(data.data.hostId === playerId);
+      if (data.data.config) setConfig(data.data.config);
+      setLoading(false);
+    } catch {
+      toast.error('Không thể tải trạng thái game');
+      router.push('/');
+    }
+  }, [roomId, router]);
+
   useEffect(() => {
     const playerId = getSessionPlayerId();
     if (!playerId) { router.push('/'); return; }
 
-    const fetchState = async () => {
-      try {
-        const res = await fetch(`/api/rooms/${roomId}/state`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        setPlayers(data.data.players);
-        setCurrentGame(data.data.currentGame);
-        setIsHost(data.data.hostId === playerId);
-        if (data.data.config) setConfig(data.data.config);
-        setLoading(false);
-      } catch {
-        toast.error('Không thể tải trạng thái game');
-      }
-    };
     fetchState();
 
     const channel = pusherClient.subscribe(getRoomChannel(roomId));
     channel.bind(PUSHER_EVENTS.GAME_UPDATE, (data: { currentGame: number }) => setCurrentGame(data.currentGame));
     channel.bind(PUSHER_EVENTS.SCORE_UPDATE, (data: { players: Player[] }) => setPlayers(data.players));
+    channel.bind(PUSHER_EVENTS.PLAYER_LEFT, () => fetchState());
+    channel.bind(PUSHER_EVENTS.ROOM_CLOSED, () => {
+      toast.error('Host đã offline. Phòng đã bị xóa.');
+      router.push('/');
+    });
     channel.bind('game-reset', () => router.push(`/lobby/${roomId}`));
 
     return () => { channel.unbind_all(); pusherClient.unsubscribe(getRoomChannel(roomId)); };
-  }, [roomId, router]);
+  }, [roomId, router, fetchState]);
 
   // Load game component dynamically when round changes
   useEffect(() => {

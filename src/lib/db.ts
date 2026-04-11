@@ -237,6 +237,47 @@ export async function listRooms(): Promise<RoomListItem[]> {
   }
 }
 
+type OfflineHandlingResult = {
+  roomDeleted: boolean;
+  playerDeleted: boolean;
+  hostLeft: boolean;
+};
+
+export async function handlePlayerOffline(roomId: string, playerId: string): Promise<OfflineHandlingResult> {
+  try {
+    await cleanupExpiredRooms();
+
+    const roomResult = await sql<{ id: string; host_id: string }>`
+      SELECT id, host_id FROM rooms WHERE id = ${roomId}
+    `;
+
+    if (roomResult.rows.length === 0) {
+      return { roomDeleted: false, playerDeleted: false, hostLeft: false };
+    }
+
+    const room = roomResult.rows[0];
+
+    const playerResult = await sql<{ id: string }>`
+      SELECT id FROM players WHERE id = ${playerId} AND room_id = ${roomId}
+    `;
+
+    if (playerResult.rows.length === 0) {
+      return { roomDeleted: false, playerDeleted: false, hostLeft: false };
+    }
+
+    if (room.host_id === playerId) {
+      await sql`DELETE FROM rooms WHERE id = ${roomId}`;
+      return { roomDeleted: true, playerDeleted: true, hostLeft: true };
+    }
+
+    await sql`DELETE FROM players WHERE id = ${playerId} AND room_id = ${roomId}`;
+    return { roomDeleted: false, playerDeleted: true, hostLeft: false };
+  } catch (error) {
+    console.error('Error handling player offline:', error);
+    return { roomDeleted: false, playerDeleted: false, hostLeft: false };
+  }
+}
+
 export async function getPlayers(roomCode: string): Promise<Player[]> {
   try {
     const result = await sql`

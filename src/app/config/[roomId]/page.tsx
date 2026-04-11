@@ -40,6 +40,11 @@ export default function ConfigPage({ params }: { params: Promise<{ roomId: strin
 
     const channel = pusherClient.subscribe(getRoomChannel(roomId));
     channel.bind(PUSHER_EVENTS.PLAYER_JOINED, () => fetchData());
+    channel.bind(PUSHER_EVENTS.PLAYER_LEFT, () => fetchData());
+    channel.bind(PUSHER_EVENTS.ROOM_CLOSED, () => {
+      toast.error('Host đã offline. Phòng đã bị xóa.');
+      router.push('/');
+    });
     channel.bind(PUSHER_EVENTS.GAME_STARTED, () => router.push(`/game/${roomId}`));
     return () => { channel.unbind_all(); pusherClient.unsubscribe(getRoomChannel(roomId)); };
   }, [roomId, router]);

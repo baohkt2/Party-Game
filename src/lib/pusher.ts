@@ -2,6 +2,16 @@
 
 import Pusher from 'pusher';
 import PusherClient from 'pusher-js';
+import { getSessionValue } from '@/lib/clientSession';
+
+function getChannelAuthParams() {
+  return {
+    playerId: getSessionValue('playerId') || '',
+    playerName: getSessionValue('playerName') || '',
+    playerAvatar: getSessionValue('playerAvatar') || '',
+    roomId: getSessionValue('roomId') || '',
+  };
+}
 
 // Server-side Pusher instance (dùng trong API routes)
 export const pusherServer = new Pusher({
@@ -17,6 +27,11 @@ export const pusherClient = new PusherClient(
   process.env.NEXT_PUBLIC_PUSHER_KEY!,
   {
     cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    channelAuthorization: {
+      endpoint: '/api/pusher/auth',
+      transport: 'ajax',
+      paramsProvider: getChannelAuthParams,
+    },
   }
 );
 
@@ -27,6 +42,7 @@ export const PUSHER_EVENTS = {
   GAME_STARTED: 'game-started',
   GAME_UPDATE: 'game-update',
   SCORE_UPDATE: 'score-update',
+  ROOM_CLOSED: 'room-closed',
   REFLEX_RESULT: 'reflex-result',
   REFLEX_ALL_DONE: 'reflex-all-done',
   REFLEX_NEXT_ROUND: 'reflex-next-round',
@@ -34,3 +50,4 @@ export const PUSHER_EVENTS = {
 
 // Helper function để tạo channel name
 export const getRoomChannel = (roomId: string) => `room-${roomId}`;
+export const getPresenceRoomChannel = (roomId: string) => `presence-room-${roomId}`;

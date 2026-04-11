@@ -42,6 +42,11 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
     const channelName = getRoomChannel(roomId);
     const channel = pusherClient.subscribe(channelName);
     channel.bind(PUSHER_EVENTS.PLAYER_JOINED, () => fetchPlayers());
+    channel.bind(PUSHER_EVENTS.PLAYER_LEFT, () => fetchPlayers());
+    channel.bind(PUSHER_EVENTS.ROOM_CLOSED, () => {
+      toast.error('Host đã offline. Phòng đã bị xóa.');
+      router.push('/');
+    });
     channel.bind(PUSHER_EVENTS.GAME_STARTED, () => router.push(`/game/${roomId}`));
 
     return () => { channel.unbind_all(); pusherClient.unsubscribe(channelName); };
