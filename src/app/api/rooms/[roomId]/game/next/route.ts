@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRoom, updateRoomStatus } from '@/lib/db';
 import { pusherServer, PUSHER_EVENTS, getRoomChannel } from '@/lib/pusher';
+import { RoomStatus } from '@/types';
 
 export async function POST(
   request: NextRequest,
@@ -17,9 +18,9 @@ export async function POST(
 
     // Advance to next game
     const nextGame = room.currentGame + 1;
-    let status = 'playing';
+    let status: RoomStatus = 'playing';
     if (nextGame > 5) {
-       status = 'finished'; // Game over after round 5
+      status = 'finished'; // Game over after round 5
     }
 
     await updateRoomStatus(roomId, status, nextGame);

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { GamePhase } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { GameProps } from '@/lib/gameRegistry';
 
@@ -188,7 +189,10 @@ export default function Game3WhoIsIt({ roomId, players, isHost }: GameProps) {
               onClick={() => castVote(p.id)}
               disabled={!!myVote}
             >
-              {p.avatar} {p.name}
+              <span className="flex items-center gap-2">
+                <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
+                <span>{p.name}</span>
+              </span>
             </Button>
           ))}
         </div>
@@ -223,7 +227,7 @@ export default function Game3WhoIsIt({ roomId, players, isHost }: GameProps) {
               const player = players.find(p => p.id === loserId);
               return (
                 <div key={loserId} className="flex flex-col items-center">
-                  <span className="text-4xl">{player?.avatar}</span>
+                  {player && <PlayerAvatar avatar={player.avatar} name={player.name} size="lg" />}
                   <span className="text-xl font-black">{player?.name}</span>
                   <span className="text-sm text-red-500 mt-1">({maxVotes} phiếu, -2đ)</span>
                 </div>

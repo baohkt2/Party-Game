@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { GamePhase } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { toast } from 'sonner';
 import { GameProps } from '@/lib/gameRegistry';
@@ -199,7 +200,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
               return (
                 <div key={r.playerId} className={`flex justify-between items-center p-3 rounded-lg border ${isSlowest || r.early ? 'bg-red-100 border-red-300' : isFastest ? 'bg-green-100 border-green-300' : 'bg-gray-50 border-gray-200'}`}>
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{p?.avatar}</span>
+                    {p && <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />}
                     <span className="font-medium">{p?.name}</span>
                     {r.playerId === myId && <span className="text-xs bg-blue-100 text-blue-800 px-2 rounded-full">Bạn</span>}
                   </div>

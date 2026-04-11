@@ -6,6 +6,7 @@ import { Player } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { toast } from 'sonner';
 import { GameProps } from '@/lib/gameRegistry';
@@ -225,26 +226,26 @@ export default function Game2Roulette({ roomId, players, isHost }: GameProps) {
         {/* Spinning Player */}
         <div className="mb-6">
           <p className="text-sm text-gray-500 mb-2">Nạn nhân:</p>
-          <div className="relative overflow-hidden h-24 flex items-center justify-center rounded-xl bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-300">
+          <div className="relative overflow-hidden h-24 flex items-center justify-center rounded-xl bg-linear-to-r from-purple-100 to-pink-100 border-2 border-purple-300">
             <div className="animate-pulse">
-              <span className="text-5xl">{displayPlayer?.avatar}</span>
+              {displayPlayer && <PlayerAvatar avatar={displayPlayer.avatar} name={displayPlayer.name} size="lg" className="mx-auto" />}
               <p className="text-2xl font-black mt-1 text-purple-700">{displayPlayer?.name}</p>
             </div>
             {/* Slot machine lines */}
-            <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-purple-200 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-purple-200 to-transparent"></div>
+            <div className="absolute top-0 left-0 right-0 h-4 bg-linear-to-b from-purple-200 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-4 bg-linear-to-t from-purple-200 to-transparent"></div>
           </div>
         </div>
 
         {/* Spinning Request */}
         <div>
           <p className="text-sm text-gray-500 mb-2">Thử thách:</p>
-          <div className="relative overflow-hidden h-20 flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-100 to-yellow-100 border-2 border-orange-300 px-4">
+          <div className="relative overflow-hidden h-20 flex items-center justify-center rounded-xl bg-linear-to-r from-orange-100 to-yellow-100 border-2 border-orange-300 px-4">
             <p className="text-lg font-bold text-orange-700 animate-pulse truncate">
               {displayRequest ? `"${displayRequest.text}"` : '...'}
             </p>
-            <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-orange-200 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-orange-200 to-transparent"></div>
+            <div className="absolute top-0 left-0 right-0 h-4 bg-linear-to-b from-orange-200 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-4 bg-linear-to-t from-orange-200 to-transparent"></div>
           </div>
         </div>
 
@@ -265,7 +266,10 @@ export default function Game2Roulette({ roomId, players, isHost }: GameProps) {
     return (
       <Card className="p-8 text-center max-w-2xl mx-auto w-full">
         <h2 className="text-2xl font-bold text-red-600 mb-2">🎯 Người thực hiện:</h2>
-        <p className="text-4xl font-black mb-6">{selectedPlayer.avatar} {selectedPlayer.name}</p>
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <PlayerAvatar avatar={selectedPlayer.avatar} name={selectedPlayer.name} size="lg" />
+          <p className="text-4xl font-black">{selectedPlayer.name}</p>
+        </div>
         <div className="bg-orange-50 border p-6 rounded-xl mb-6">
           <p className="text-gray-500 text-sm mb-2">Yêu cầu từ: {author}</p>
           <p className="text-2xl font-semibold">&quot;{selectedRequest.text}&quot;</p>

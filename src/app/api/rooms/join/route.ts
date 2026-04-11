@@ -3,10 +3,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { joinRoom } from '@/lib/db';
 import { pusherServer, PUSHER_EVENTS, getRoomChannel } from '@/lib/pusher';
+import { normalizeAvatarUrl } from '@/lib/avatar';
 
 export async function POST(request: NextRequest) {
   try {
-    const { roomCode, playerName } = await request.json();
+    const { roomCode, playerName, avatar } = await request.json();
 
     // Validate input
     if (!roomCode || roomCode.length !== 6) {
@@ -23,10 +24,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedAvatar = normalizeAvatarUrl(avatar, playerName.trim());
+
     // Join room
     const { roomId, playerId } = await joinRoom(
       roomCode.toUpperCase(),
-      playerName.trim()
+      playerName.trim(),
+      normalizedAvatar
     );
 
     // Trigger Pusher event to notify other players
@@ -34,11 +38,12 @@ export async function POST(request: NextRequest) {
     await pusherServer.trigger(channel, PUSHER_EVENTS.PLAYER_JOINED, {
       playerId,
       playerName: playerName.trim(),
+      avatar: normalizedAvatar,
     });
 
     return NextResponse.json({
       success: true,
-      data: { roomId, playerId },
+      data: { roomId, playerId, avatar: normalizedAvatar },
     });
   } catch (error) {
     console.error('Error joining room:', error);

@@ -32,6 +32,15 @@ export interface Room {
 
 export type RoomStatus = 'waiting' | 'configuring' | 'playing' | 'finished';
 
+export interface RoomListItem {
+  id: string;
+  status: RoomStatus;
+  currentGame: number;
+  playerCount: number;
+  createdAt: string;
+  statusChangedAt: string;
+}
+
 export interface GameState {
   roomId: string;
   gameNumber: number;

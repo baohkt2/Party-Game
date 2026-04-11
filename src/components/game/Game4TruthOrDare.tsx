@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { GamePhase } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { toast } from 'sonner';
 import { GameProps } from '@/lib/gameRegistry';
@@ -150,7 +151,7 @@ export default function Game4TruthOrDare({ roomId, players, isHost }: GameProps)
       <div className="mb-8">
         <p className="text-gray-500 mb-2">Đang tới lượt của:</p>
         <div className="inline-flex items-center gap-2 bg-blue-50 px-6 py-3 rounded-full border border-blue-200">
-          <span className="text-4xl">{currentPlayer.avatar}</span>
+          <PlayerAvatar avatar={currentPlayer.avatar} name={currentPlayer.name} size="lg" />
           <span className="text-2xl font-bold text-blue-700">{currentPlayer.name}</span>
           {isMyTurn && <span className="ml-2 text-sm bg-blue-600 text-white px-2 py-1 rounded-full">(Là bạn)</span>}
         </div>

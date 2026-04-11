@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { toast } from 'sonner';
 import { Player } from '@/types';
 import { pusherClient, PUSHER_EVENTS, getRoomChannel } from '@/lib/pusher';
@@ -63,8 +64,8 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
   return (
     <div className="min-h-screen bg-[#0a0a1a] text-white relative overflow-hidden">
       {/* BG */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-cyan-900/20 pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-br from-purple-900/20 via-transparent to-cyan-900/20 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-125 h-125 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
@@ -98,7 +99,7 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
                     isMe ? 'bg-purple-500/10 border border-purple-500/20' : 'bg-white/5 border border-transparent'
                   }`}
                 >
-                  <span className="text-2xl">{player.avatar}</span>
+                  <PlayerAvatar avatar={player.avatar} name={player.name} size="md" />
                   <span className="font-medium flex-1">{player.name}</span>
                   {idx === 0 && (
                     <span className="text-xs font-bold bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">
@@ -126,7 +127,7 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
         {isHost ? (
           <Button
             size="lg"
-            className="w-full py-6 text-lg font-black bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 border-0 shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]"
+            className="w-full py-6 text-lg font-black bg-linear-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 border-0 shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]"
             onClick={goToConfig}
           >
             ⚙️ Cấu hình & Bắt đầu

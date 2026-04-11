@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { toast } from 'sonner';
 import { RoundConfig, RoomConfig, Player } from '@/types';
 import { getAllGameMetas, GameModuleMeta } from '@/lib/gameRegistry';
@@ -111,8 +112,8 @@ export default function ConfigPage({ params }: { params: Promise<{ roomId: strin
   return (
     <div className="min-h-screen bg-[#0a0a1a] text-white">
       {/* BG Effects */}
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-cyan-900/20 pointer-events-none" />
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed inset-0 bg-linear-to-br from-purple-900/20 via-transparent to-cyan-900/20 pointer-events-none" />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-150 h-150 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 py-8">
         {/* Header */}
@@ -129,7 +130,7 @@ export default function ConfigPage({ params }: { params: Promise<{ roomId: strin
         <div className="flex flex-wrap justify-center gap-2 mb-8">
           {players.map(p => (
             <div key={p.id} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1">
-              <span>{p.avatar}</span>
+              <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
               <span className="text-sm font-medium">{p.name}</span>
             </div>
           ))}
@@ -224,7 +225,7 @@ export default function ConfigPage({ params }: { params: Promise<{ roomId: strin
             {/* Start */}
             <Button
               size="lg"
-              className="w-full py-6 text-lg font-black bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 border-0 shadow-lg shadow-purple-500/20"
+              className="w-full py-6 text-lg font-black bg-linear-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 border-0 shadow-lg shadow-purple-500/20"
               onClick={startGame}
               disabled={saving || rounds.length === 0}
             >

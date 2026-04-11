@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { GameProps } from '@/lib/gameRegistry';
 
@@ -166,9 +167,9 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
   const BetChip = ({ amount, highlight = false }: { amount: number, highlight?: boolean }) => (
     <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-bold text-sm shadow-lg border-2 ${
       highlight
-        ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-amber-900 border-yellow-300 animate-pulse'
+        ? 'bg-linear-to-r from-yellow-400 to-amber-500 text-amber-900 border-yellow-300 animate-pulse'
         : amount > 0
-          ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white border-red-400'
+          ? 'bg-linear-to-r from-red-500 to-rose-600 text-white border-red-400'
           : 'bg-gray-400 text-white border-gray-300'
     }`}>
       <span>🍺</span> <span>{amount}</span>
@@ -245,7 +246,7 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
                   <div key={id} className="flex items-center justify-between bg-green-900/50 border border-green-500/30 p-3 rounded-xl backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl font-black text-amber-400">#{i + 1}</span>
-                      <span className="text-2xl">{p?.avatar}</span>
+                      {p && <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />}
                       <span className="font-bold text-lg">{p?.name}</span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -271,7 +272,7 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
                   return (
                     <div key={id} className="flex items-center justify-between bg-red-900/30 border border-red-500/30 p-3 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">{p?.avatar}</span>
+                        {p && <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />}
                         <span className="font-bold">{p?.name}</span>
                       </div>
                       <div className="flex items-center gap-3">
@@ -297,7 +298,7 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
                   return (
                     <div key={id} className="flex items-center justify-between bg-gray-800/50 border border-gray-600/30 p-3 rounded-xl opacity-70">
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">{p?.avatar}</span>
+                        {p && <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />}
                         <span className="font-bold text-gray-300">{p?.name}</span>
                       </div>
                       <span className="text-gray-400 font-bold">🍺 {state.bets[id] || 0} ngụm</span>
@@ -376,7 +377,7 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
 
                   {/* Player info */}
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xl">{p.avatar}</span>
+                    <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className={`font-bold text-sm truncate ${isMe ? 'text-amber-300' : 'text-white'}`}>
                         {p.name} {isMe && '(Bạn)'}

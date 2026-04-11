@@ -3,6 +3,7 @@
 import { use, useEffect, useState, useRef, ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { toast } from 'sonner';
 import { Player, RoomConfig } from '@/types';
 import { pusherClient, PUSHER_EVENTS, getRoomChannel } from '@/lib/pusher';
@@ -120,12 +121,12 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 max-w-2xl mx-auto w-full">
         <div className="text-center mb-8">
           <div className="text-6xl mb-4 animate-bounce">🏆</div>
-          <h2 className="text-4xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent mb-2">
+          <h2 className="text-4xl font-black bg-linear-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent mb-2">
             VUA TRÒ CHƠI
           </h2>
           {sorted[0] && (
             <div className="mt-4">
-              <p className="text-6xl mb-2">{sorted[0].avatar}</p>
+              <PlayerAvatar avatar={sorted[0].avatar} name={sorted[0].name} size="xl" className="mx-auto mb-2" />
               <p className="text-3xl font-black text-amber-300">{sorted[0].name}</p>
               <p className="text-xl font-bold text-amber-400/60 mt-1">{sorted[0].totalScore} điểm</p>
             </div>
@@ -143,7 +144,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
             }`}>
               <div className="flex items-center gap-3">
                 <span className="text-2xl w-8">{medals[i] || `#${i + 1}`}</span>
-                <span className="text-xl">{p.avatar}</span>
+                <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
                 <span className="font-bold">{p.name}</span>
                 {p.id === localStorage.getItem('playerId') && (
                   <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">Bạn</span>
@@ -157,7 +158,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
         {isHost && (
           <Button
             size="lg"
-            className="w-full py-6 text-lg font-black bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 border-0 shadow-lg"
+            className="w-full py-6 text-lg font-black bg-linear-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 border-0 shadow-lg"
             onClick={resetGame}
           >
             🔄 Chơi Lại
@@ -168,7 +169,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${bgGradient} p-4 transition-all duration-1000`}>
+    <div className={`min-h-screen bg-linear-to-br ${bgGradient} p-4 transition-all duration-1000`}>
       {showConfetti && <canvas ref={confettiRef} className="fixed inset-0 pointer-events-none z-50" />}
 
       <div className="max-w-4xl mx-auto pt-4 flex flex-col gap-4">
@@ -231,7 +232,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
                 <div key={p.id} className={`flex flex-col items-center p-2 rounded-lg border ${
                   i === 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-white/5 border-white/5'
                 }`}>
-                  <span className="text-xl">{p.avatar}</span>
+                  <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
                   <span className="text-xs font-medium text-white/70 truncate w-full text-center">{p.name}</span>
                   <span className="font-bold text-amber-300">{p.totalScore}đ</span>
                 </div>
