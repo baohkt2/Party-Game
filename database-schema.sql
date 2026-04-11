@@ -6,8 +6,10 @@ CREATE TABLE IF NOT EXISTS rooms (
   id TEXT PRIMARY KEY,
   host_id TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
-  status TEXT DEFAULT 'waiting', -- waiting, playing, finished
-  current_game INTEGER DEFAULT 0
+  status TEXT DEFAULT 'waiting', -- waiting, configuring, playing, finished
+  status_changed_at TIMESTAMP DEFAULT NOW(),
+  current_game INTEGER DEFAULT 0,
+  config JSONB DEFAULT '{"rounds":[]}'::jsonb
 );
 
 -- Bảng players: Lưu thông tin người chơi
@@ -18,6 +20,7 @@ CREATE TABLE IF NOT EXISTS players (
   avatar TEXT,
   session_id TEXT UNIQUE NOT NULL,
   total_score INTEGER DEFAULT 0,
+  scores JSONB DEFAULT '{}'::jsonb,
   game1_score INTEGER DEFAULT 0,
   game2_score INTEGER DEFAULT 0,
   game3_score INTEGER DEFAULT 0,
@@ -38,6 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_players_room_id ON players(room_id);
 CREATE INDEX IF NOT EXISTS idx_players_session_id ON players(session_id);
 CREATE INDEX IF NOT EXISTS idx_game_states_room_id ON game_states(room_id);
 CREATE INDEX IF NOT EXISTS idx_rooms_status ON rooms(status);
+CREATE INDEX IF NOT EXISTS idx_rooms_status_changed_at ON rooms(status_changed_at);
 
 -- Seed data cho testing (optional)
 -- INSERT INTO rooms (id, host_id, status, current_game) VALUES ('TEST01', 'host-1', 'waiting', 0);

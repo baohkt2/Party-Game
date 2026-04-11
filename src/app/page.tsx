@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useGameStore } from '@/lib/store';
 import { createRandomAvatarSeed, DICEBEAR_STYLES, DiceBearStyle, getDiceBearAvatarUrl } from '@/lib/avatar';
+import { setSessionData } from '@/lib/clientSession';
 import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { RoomListItem, RoomStatus } from '@/types';
 
@@ -79,10 +80,12 @@ export default function Home() {
   }, [fetchRooms]);
 
   const saveSession = (roomId: string, playerId: string, playerName: string, avatar: string) => {
-    localStorage.setItem('playerId', playerId);
-    localStorage.setItem('playerName', playerName);
-    localStorage.setItem('playerAvatar', avatar);
-    localStorage.setItem('roomId', roomId);
+    setSessionData({
+      playerId,
+      playerName,
+      playerAvatar: avatar,
+      roomId,
+    });
     setPlayer(playerId, playerName);
     setRoom(roomId);
   };

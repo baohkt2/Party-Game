@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/ui/player-avatar';
+import { getSessionPlayerId } from '@/lib/clientSession';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { GameProps } from '@/lib/gameRegistry';
 
@@ -54,7 +55,7 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
   const [state, setState] = useState<PokerState>(INITIAL_STATE);
   const [hostDeck, setHostDeck] = useState<CardType[]>([]);
   const scoredRef = useRef(false);
-  const myId = typeof window !== 'undefined' ? localStorage.getItem('playerId') : null;
+  const myId = getSessionPlayerId();
 
   useEffect(() => {
     const channel = pusherClient.subscribe(getRoomChannel(roomId));

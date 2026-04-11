@@ -4,6 +4,7 @@ import { use, useEffect, useState, useRef, ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/ui/player-avatar';
+import { getSessionPlayerId } from '@/lib/clientSession';
 import { toast } from 'sonner';
 import { Player, RoomConfig } from '@/types';
 import { pusherClient, PUSHER_EVENTS, getRoomChannel } from '@/lib/pusher';
@@ -21,6 +22,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
   const [showConfetti, setShowConfetti] = useState(false);
   const [GameComponent, setGameComponent] = useState<ComponentType<GameProps> | null>(null);
   const confettiRef = useRef<HTMLCanvasElement>(null);
+  const myPlayerId = getSessionPlayerId();
 
   // Current round info (1-indexed: currentGame=1 → config.rounds[0])
   const roundIdx = currentGame - 1;
@@ -29,7 +31,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
   const isGameOver = currentGame > totalRounds && totalRounds > 0;
 
   useEffect(() => {
-    const playerId = localStorage.getItem('playerId');
+    const playerId = getSessionPlayerId();
     if (!playerId) { router.push('/'); return; }
 
     const fetchState = async () => {
@@ -93,7 +95,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
 
   const nextGame = () => { fetch(`/api/rooms/${roomId}/game/next`, { method: 'POST' }); };
   const resetGame = () => {
-    const playerId = localStorage.getItem('playerId');
+    const playerId = getSessionPlayerId();
     fetch(`/api/rooms/${roomId}/reset`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId }),
@@ -146,7 +148,7 @@ export default function GamePage({ params }: { params: Promise<{ roomId: string 
                 <span className="text-2xl w-8">{medals[i] || `#${i + 1}`}</span>
                 <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
                 <span className="font-bold">{p.name}</span>
-                {p.id === localStorage.getItem('playerId') && (
+                {p.id === myPlayerId && (
                   <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">Bạn</span>
                 )}
               </div>

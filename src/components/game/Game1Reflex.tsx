@@ -5,6 +5,7 @@ import { GamePhase } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/ui/player-avatar';
+import { getSessionPlayerId } from '@/lib/clientSession';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { toast } from 'sonner';
 import { GameProps } from '@/lib/gameRegistry';
@@ -23,7 +24,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
   const scoredRef = useRef(false);
   
   const timeoutRef = useRef<NodeJS.Timeout>(null);
-  const myId = typeof window !== 'undefined' ? localStorage.getItem('playerId') : null;
+  const myId = getSessionPlayerId();
 
   const endRound = useCallback(() => {
     fetch(`/api/rooms/${roomId}/game/action`, {

@@ -6,11 +6,43 @@ import { Room, Player, RoomConfig, RoomListItem, RoomStatus } from '@/types';
 import { normalizeAvatarUrl } from '@/lib/avatar';
 
 const ROOM_TTL_MINUTES = 5;
+let ensureRoomLifecycleSchemaPromise: Promise<void> | null = null;
+let hasTriedEnsureRoomLifecycleSchema = false;
+
+function isMissingStatusChangedAtColumn(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.message.toLowerCase().includes('status_changed_at');
+}
+
+async function ensureRoomLifecycleSchema(): Promise<void> {
+  if (hasTriedEnsureRoomLifecycleSchema) return;
+
+  if (!ensureRoomLifecycleSchemaPromise) {
+    ensureRoomLifecycleSchemaPromise = (async () => {
+      try {
+        await sql`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS status_changed_at TIMESTAMP DEFAULT NOW();`;
+        await sql`
+          UPDATE rooms
+          SET status_changed_at = COALESCE(status_changed_at, created_at, NOW())
+          WHERE status_changed_at IS NULL
+        `;
+      } catch (error) {
+        console.warn('Unable to auto-ensure room lifecycle schema:', error);
+      } finally {
+        hasTriedEnsureRoomLifecycleSchema = true;
+      }
+    })();
+  }
+
+  await ensureRoomLifecycleSchemaPromise;
+}
 
 // ==================== ROOM OPERATIONS ====================
 
 export async function cleanupExpiredRooms(): Promise<number> {
   try {
+    await ensureRoomLifecycleSchema();
+
     const result = await sql<{ id: string }>`
       DELETE FROM rooms
       WHERE status IN ('waiting', 'configuring', 'finished')
@@ -20,6 +52,20 @@ export async function cleanupExpiredRooms(): Promise<number> {
 
     return result.rows.length;
   } catch (error) {
+    if (isMissingStatusChangedAtColumn(error)) {
+      try {
+        const fallbackResult = await sql<{ id: string }>`
+          DELETE FROM rooms
+          WHERE status IN ('waiting', 'configuring', 'finished')
+            AND created_at < NOW() - (${ROOM_TTL_MINUTES} * INTERVAL '1 minute')
+          RETURNING id
+        `;
+        return fallbackResult.rows.length;
+      } catch (fallbackError) {
+        console.error('Fallback cleanup failed:', fallbackError);
+      }
+    }
+
     console.error('Error cleaning up expired rooms:', error);
     return 0;
   }
@@ -157,6 +203,35 @@ export async function listRooms(): Promise<RoomListItem[]> {
       statusChangedAt: new Date(row.status_changed_at).toISOString(),
     }));
   } catch (error) {
+    if (isMissingStatusChangedAtColumn(error)) {
+      try {
+        const fallback = await sql<RoomListRow>`
+          SELECT
+            r.id,
+            r.status,
+            r.current_game,
+            r.created_at,
+            r.created_at AS status_changed_at,
+            COUNT(p.id)::int AS player_count
+          FROM rooms r
+          LEFT JOIN players p ON p.room_id = r.id
+          GROUP BY r.id, r.status, r.current_game, r.created_at
+          ORDER BY r.created_at DESC
+        `;
+
+        return fallback.rows.map((row) => ({
+          id: row.id,
+          status: row.status,
+          currentGame: Number(row.current_game) || 0,
+          playerCount: Number(row.player_count) || 0,
+          createdAt: new Date(row.created_at).toISOString(),
+          statusChangedAt: new Date(row.status_changed_at).toISOString(),
+        }));
+      } catch (fallbackError) {
+        console.error('Fallback room list failed:', fallbackError);
+      }
+    }
+
     console.error('Error listing rooms:', error);
     return [];
   }
@@ -201,6 +276,8 @@ export async function getPlayers(roomCode: string): Promise<Player[]> {
 
 export async function updateRoomStatus(roomCode: string, status: RoomStatus, currentGame?: number) {
   try {
+    await ensureRoomLifecycleSchema();
+
     if (currentGame !== undefined) {
       await sql`
         UPDATE rooms
@@ -226,6 +303,17 @@ export async function updateRoomStatus(roomCode: string, status: RoomStatus, cur
       `;
     }
   } catch (error) {
+    if (isMissingStatusChangedAtColumn(error)) {
+      if (currentGame !== undefined) {
+        await sql`
+          UPDATE rooms SET status = ${status}, current_game = ${currentGame} WHERE id = ${roomCode}
+        `;
+      } else {
+        await sql`UPDATE rooms SET status = ${status} WHERE id = ${roomCode}`;
+      }
+      return;
+    }
+
     console.error('Error updating room status:', error);
     throw error;
   }
@@ -233,6 +321,8 @@ export async function updateRoomStatus(roomCode: string, status: RoomStatus, cur
 
 export async function saveRoomConfig(roomCode: string, config: RoomConfig) {
   try {
+    await ensureRoomLifecycleSchema();
+
     const configStr = JSON.stringify(config);
     await sql`
       UPDATE rooms
@@ -246,6 +336,12 @@ export async function saveRoomConfig(roomCode: string, config: RoomConfig) {
       WHERE id = ${roomCode}
     `;
   } catch (error) {
+    if (isMissingStatusChangedAtColumn(error)) {
+      const configStr = JSON.stringify(config);
+      await sql`UPDATE rooms SET config = ${configStr}, status = 'configuring' WHERE id = ${roomCode}`;
+      return;
+    }
+
     console.error('Error saving room config:', error);
     throw error;
   }

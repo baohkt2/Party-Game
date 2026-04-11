@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlayerAvatar } from '@/components/ui/player-avatar';
+import { getSessionPlayerId } from '@/lib/clientSession';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { toast } from 'sonner';
 import { GameProps } from '@/lib/gameRegistry';
@@ -37,7 +38,7 @@ export default function Game2Roulette({ roomId, players, isHost }: GameProps) {
   const [myVote, setMyVote] = useState<boolean | null>(null);
   const [voteResult, setVoteResult] = useState<{ success: boolean, yesCount: number, noCount: number } | null>(null);
 
-  const myId = typeof window !== 'undefined' ? localStorage.getItem('playerId') : null;
+  const myId = getSessionPlayerId();
 
   useEffect(() => {
     const channelName = getRoomChannel(roomId);

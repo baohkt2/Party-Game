@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/ui/player-avatar';
+import { getSessionPlayerId } from '@/lib/clientSession';
 import { toast } from 'sonner';
 import { RoundConfig, RoomConfig, Player } from '@/types';
 import { getAllGameMetas, GameModuleMeta } from '@/lib/gameRegistry';
@@ -22,7 +23,7 @@ export default function ConfigPage({ params }: { params: Promise<{ roomId: strin
   const gameMetas = getAllGameMetas();
 
   useEffect(() => {
-    const playerId = localStorage.getItem('playerId');
+    const playerId = getSessionPlayerId();
     if (!playerId) { router.push('/'); return; }
 
     const fetchData = async () => {
@@ -79,7 +80,7 @@ export default function ConfigPage({ params }: { params: Promise<{ roomId: strin
     if (rounds.length === 0) { toast.error('Thêm ít nhất 1 vòng chơi'); return; }
 
     setSaving(true);
-    const playerId = localStorage.getItem('playerId');
+    const playerId = getSessionPlayerId();
     try {
       // Save config
       await fetch(`/api/rooms/${roomId}/config`, {

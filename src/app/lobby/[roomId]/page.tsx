@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/ui/player-avatar';
+import { getSessionPlayerId } from '@/lib/clientSession';
 import { toast } from 'sonner';
 import { Player } from '@/types';
 import { pusherClient, PUSHER_EVENTS, getRoomChannel } from '@/lib/pusher';
@@ -15,6 +16,7 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [isHost, setIsHost] = useState(false);
+  const currentPlayerId = getSessionPlayerId();
 
   const fetchPlayers = async () => {
     try {
@@ -22,7 +24,7 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Không thể tải danh sách');
       setPlayers(data.data.players);
-      const playerId = localStorage.getItem('playerId');
+      const playerId = getSessionPlayerId();
       setIsHost(playerId === data.data.hostId);
       setLoading(false);
     } catch (error) {
@@ -32,7 +34,7 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
   };
 
   useEffect(() => {
-    const playerId = localStorage.getItem('playerId');
+    const playerId = getSessionPlayerId();
     if (!playerId) { router.push('/'); return; }
 
     fetchPlayers();
@@ -91,7 +93,7 @@ export default function LobbyPage({ params }: { params: Promise<{ roomId: string
 
           <div className="space-y-2">
             {players.map((player, idx) => {
-              const isMe = player.id === localStorage.getItem('playerId');
+              const isMe = player.id === currentPlayerId;
               return (
                 <div
                   key={player.id}
