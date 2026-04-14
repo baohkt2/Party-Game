@@ -137,7 +137,7 @@ export default function Game2Roulette({ roomId, players, isHost }: GameProps) {
       toast.error('Vui lòng điền đủ 3 yêu cầu');
       return;
     }
-    const payload = myRequests.map(text => ({ playerId: myId, text }));
+    const payload = myRequests.map(text => ({ playerId: myId!, text }));
     fetch(`/api/rooms/${roomId}/game/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -184,7 +184,7 @@ export default function Game2Roulette({ roomId, players, isHost }: GameProps) {
     return (
       <Card className="p-8 max-w-2xl mx-auto w-full">
         <h2 className="text-3xl font-bold mb-4 text-center">Vòng 2: Hại Người - Hại Mình</h2>
-        {!(myId ? submittedPlayers.includes(myId) : false) ? (
+        {!submittedPlayers.includes(myId!) ? (
           <div className="space-y-4">
             <p className="text-gray-600 mb-4 text-center">Hãy viết ra 3 hành động (Dare) bạn muốn người khác làm.</p>
             {myRequests.map((req, idx) => (
