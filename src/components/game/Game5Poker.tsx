@@ -104,14 +104,20 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
       deck = generateDeck();
       const hands: Record<string, CardType[]> = {};
       const active = players.map(p => p.id);
-      active.forEach(pId => { hands[pId] = [deck.pop()!]; });
+      active.forEach(pId => {
+        const card = deck.pop();
+        hands[pId] = card != null ? [card] : [];
+      });
       setHostDeck(deck); scoredRef.current = false;
       newState = { phase: 'phase1', hands, activePlayers: active, bets: {}, pot: 0, actedThisRound: [], currentBet: 1 };
     } else {
       const nextPhase: PokerPhase = state.phase === 'phase1' ? 'phase2' : state.phase === 'phase2' ? 'phase3' : 'result';
       const hands = { ...state.hands };
       if (nextPhase !== 'result') {
-        state.activePlayers.forEach(pId => { hands[pId] = [...(hands[pId] || []), deck.pop()!]; });
+        state.activePlayers.forEach(pId => {
+            const card = deck.pop();
+            hands[pId] = [...(hands[pId] || []), card];
+        });
       }
       setHostDeck(deck);
       newState = { ...state, phase: nextPhase, hands, actedThisRound: [], currentBet: 1 };
@@ -315,8 +321,8 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
   }
 
   // ─── BETTING ROUNDS (Phase 1, 2, 3) ───
-  const hasActed = state.actedThisRound.includes(myId!);
-  const isActive = state.activePlayers.includes(myId!);
+  const hasActed = myId != null ? state.actedThisRound.includes(myId) : false;
+  const isActive = myId != null ? state.activePlayers.includes(myId) : false;
   const allActed = state.activePlayers.every(id => state.actedThisRound.includes(id));
   const phaseNumber = state.phase === 'phase1' ? 1 : state.phase === 'phase2' ? 2 : 3;
 
@@ -409,11 +415,11 @@ export default function Game5Poker({ roomId, players, isHost }: GameProps) {
         {/* ACTION BAR */}
         <div className="px-4 pb-4">
           {/* My cards large view */}
-          {isActive && state.hands[myId!] && (
+          {isActive && state.hands[myId]?.length ? (
             <div className="flex justify-center gap-2 mb-4">
-              {state.hands[myId!].map((c, i) => <PokerCard key={i} card={c} size="lg" />)}
+              {state.hands[myId]?.map((c, i) => <PokerCard key={i} card={c} size="lg" />)}
             </div>
-          )}
+          ) : null}
 
           <div className="bg-black/40 backdrop-blur-sm rounded-xl p-4">
             {isActive && !hasActed ? (

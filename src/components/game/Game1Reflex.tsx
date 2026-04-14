@@ -133,7 +133,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
       time = Date.now() - startTime;
     }
 
-    const resultData: ReflexResult = { playerId: myId!, time, early };
+    const resultData: ReflexResult = { playerId: myId ? myId : '', time, early };
     setMyResult(resultData);
 
     fetch(`/api/rooms/${roomId}/game/action`, {
