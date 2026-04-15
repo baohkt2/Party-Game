@@ -217,7 +217,7 @@ export default function Game1Reflex({ roomId, players, isHost }: GameProps) {
           </div>
           <div className="mt-4 p-4 bg-red-50 text-red-800 rounded-lg text-center border border-red-200">
             <p className="font-semibold">🍻 Hình phạt vòng này:</p>
-            <p>Người bấm sớm/chậm nhất phải uống 1 ngụm!</p>
+            <p>Người chậm nhất phải uống 1 ngụm!</p>
           </div>
         </div>
       );

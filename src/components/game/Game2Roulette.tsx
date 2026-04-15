@@ -57,8 +57,8 @@ export default function Game2Roulette({ roomId, players, isHost }: GameProps) {
 
       // Animate spinning effect
       let tick = 0;
-      const totalTicks = 10;
-      const intervalBase = 10;
+      const totalTicks = 20;
+      const intervalBase = 20;
 
       const animateSpin = () => {
         if (tick < totalTicks) {

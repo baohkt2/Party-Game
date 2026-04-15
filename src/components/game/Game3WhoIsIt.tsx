@@ -8,19 +8,7 @@ import { PlayerAvatar } from '@/components/ui/player-avatar';
 import { getSessionPlayerId } from '@/lib/clientSession';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { GameProps } from '@/lib/gameRegistry';
-
-const QUESTIONS = [
-  "Ai là người tửu lượng kém nhất?",
-  "Ai hay nợ tiền không trả?",
-  "Ai là người hay bùng kèo nhất?",
-  "Ai đang ế lâu năm nhất?",
-  "Ai hay nói đạo lý nhất?",
-  "Ai simp chúa nhất?",
-  "Ai có nguy cơ ngoại tình cao nhất?",
-  "Ai ở dơ nhất đám?",
-  "Ai là người hay ngủ ngáy to nhất?",
-  "Ai thường xuyên đi trễ nhất?"
-];
+import QUESTIONS from '@/store/game3/questions.json';
 
 export default function Game3WhoIsIt({ roomId, players, isHost }: GameProps) {
   const [phase, setPhase] = useState<GamePhase['whoisit']>('question');

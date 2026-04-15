@@ -9,28 +9,8 @@ import { getSessionPlayerId } from '@/lib/clientSession';
 import { pusherClient, getRoomChannel } from '@/lib/pusher';
 import { toast } from 'sonner';
 import { GameProps } from '@/lib/gameRegistry';
-
-const TRUTHS = [
-  "Nói tên người bạn từng crush trong nhóm này (nếu có)?",
-  "Bí mật đáng xấu hổ nhất của bạn là gì?",
-  "Người bạn nhắn tin gần đây nhất là ai?",
-  "Bạn đã bao giờ nói dối để tránh đi chơi với bạn bè chưa?",
-  "Điều điên rồ nhất bạn từng làm khi say là gì?",
-  "Bạn có bao giờ stalk ai trong nhóm này không?",
-  "Bạn thực sự nghĩ gì về người ngồi bên trái?",
-  "Lần cuối bạn khóc vì chuyện tình cảm là khi nào?"
-];
-
-const DARES = [
-  "Gọi điện cho người yêu cũ (hoặc crush) và nói 'Tự nhiên nhớ ghê'.",
-  "Hát một đoạn nhạc thiếu nhi bằng giọng ma mị.",
-  "Đăng một status \"Tôi đang cô đơn\" lên mạng xã hội.",
-  "Uống 1 ngụm bia pha với tương ớt/nước mắm (tùy chọn).",
-  "Điệu nhảy sexy 15 giây.",
-  "Nhắn tin cho crush hiện tại nói 'Anh/Em thích bạn'.",
-  "Bắt chước 1 con vật trong 30 giây.",
-  "Selfie mặt xấu nhất rồi đăng story."
-];
+import TRUTHS from '@/store/game4/truths.json';
+import DARES from '@/store/game4/dares.json';
 
 export default function Game4TruthOrDare({ roomId, players, isHost }: GameProps) {
   const [phase, setPhase] = useState<GamePhase['truthOrDare']>('selection');
